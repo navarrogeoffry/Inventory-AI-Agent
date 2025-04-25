@@ -173,3 +173,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 .DS_Store
+
+*.pyc
+*.pyo
+*.pyd
+# Add other files/directories to ignore as needed
