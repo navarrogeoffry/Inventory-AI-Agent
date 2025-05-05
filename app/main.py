@@ -5,16 +5,11 @@ from app.routes import api # Make sure api router is imported
 from app.db import init_db # Import init_db if you want DB init on startup
 import logging
 import os
-
-from dotenv import load_dotenv # Import if using .env file
 from fastapi.staticfiles import StaticFiles
-
+from dotenv import load_dotenv # Import if using .env file
 
 #allow CORS
 from fastapi.middleware.cors import CORSMiddleware
-
-
-
 
 # Load .env file if it exists (for OPENAI_API_KEY)
 load_dotenv()
@@ -27,6 +22,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application starting up...")
+    # Create static directory if it doesn't exist
+    os.makedirs("static", exist_ok=True)
     init_db() # Initialize the database
     yield
     logger.info("Application shutting down...")
@@ -39,10 +36,7 @@ app = FastAPI(
     lifespan=lifespan # Include lifespan manager
 )
 
-
-
-
-
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -50,6 +44,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Include the API router WITH the prefix ---
 # This makes routes in api.py available under /api/...
@@ -63,7 +60,3 @@ async def root():
 
 # Example run command (as comment):
 # uvicorn app.main:app --reload --port 8000
-
-
-from fastapi.staticfiles import StaticFiles
-app.mount("/static", StaticFiles(directory="static"), name="static")

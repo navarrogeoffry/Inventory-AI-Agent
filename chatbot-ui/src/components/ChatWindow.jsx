@@ -1,13 +1,15 @@
 // ChatWindow.jsx
-export default function ChatWindow({ children, darkMode }) {
-	const style = {
-	  flexGrow: 1,
-	  padding: '1rem',
-	  backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
-	  color: darkMode ? '#ffffff' : '#000000',
-	  overflowY: 'auto',
-	};
-        
-	return <div style={style}>{children}</div>;
-        }
+import { motion } from "framer-motion";
+
+export default function ChatWindow({ children, darkMode, className = "" }) {
+	return (
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			className={`p-4 md:p-6 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white overflow-y-auto ${className}`}
+		>
+			{children}
+		</motion.div>
+	);
+}
         

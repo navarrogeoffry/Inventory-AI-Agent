@@ -140,7 +140,10 @@ async def process_query(request: QueryRequest):
                 # Call plotting function...
                 plot_func = None
                 if chart_type == "bar": plot_func = create_bar_chart
-                elif chart_type == "pie": plot_func = lambda d, x, y, t: create_pie_chart(d, label_col=x, value_col=y, title=t)
+                elif chart_type == "pie": 
+                    def pie_chart_adapter(data, x_col, y_col, title):
+                        return create_pie_chart(data, label_col=x_col, value_col=y_col, title=title)
+                    plot_func = pie_chart_adapter
                 elif chart_type == "line": plot_func = create_line_chart
                 elif chart_type == "scatter": plot_func = create_scatter_plot
                 if plot_func: image_buffer = plot_func(db_results, x_col=x_col, y_col=y_col, title=plot_title)

@@ -1,23 +1,29 @@
 // MessageList.jsx
+import { motion } from "framer-motion";
 import Message from "./Message";
-import { useEffect, useRef } from "react";
 
-export default function MessageList({ messages }) {
-  const bottomRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+export default function MessageList({ messages, darkMode }) {
+  // Create staggered animation effect for messages
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
- {messages
-  .filter((msg) => msg && typeof msg === "object")
-  .map((message, i) => (
-    <Message key={i} message={message} />
-))}
-
-      <div ref={bottomRef} />
-    </div>
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-4 py-3 px-1"
+    >
+      {messages.map((message, index) => (
+        <Message key={index} message={message} />
+      ))}
+    </motion.div>
   );
 }

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6b24088b-3180-4889-a5f2-eea612798525" name="Changes" comment="feat: Implement charting, memory, error handling, and refactor API&#10;&#10;Adds major backend features including:&#10;- Chart Generation: Integrates Matplotlib to create bar, pie, line, and scatter plots based on AI analysis of user requests and query results. API now returns PNG images when charts are requested.&#10;- Conversational Memory: Implements basic in-memory session management to allow the AI to use recent conversation history for context.&#10;- Error Handling: Significantly improved error catching and reporting in API routes and database utilities for better debugging.&#10;- Refactor: Code for AI interaction and SQL validation was refactored into separate `ai_processing.py` and `sql_validator.py` modules for better organization (though temporarily consolidated back into `api.py` during 501 error debugging).&#10;- AI Explanations: Added capability for AI to explain data results in natural language." />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;history&quot;: [
+    {
+      &quot;author&quot;: &quot;navarrogeoffry&quot;
+    }
+  ],
+  &quot;lastFilter&quot;: {
+    &quot;author&quot;: &quot;navarrogeoffry&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="selectedUrlAndAccountId">
+      <UrlAndAccount>
+        <option name="accountId" value="c7422126-874d-449f-8416-14298d21ae76" />
+        <option name="url" value="git@github.com:navarrogeoffry/Inventory-AI-Agent.git" />
+      </UrlAndAccount>
+    </option>
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2wCNyAQQqvuOVtBa2o6PN1OfSaV" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/miguelp/Documents/Inventory-AI-Agent",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6b24088b-3180-4889-a5f2-eea612798525" name="Changes" comment="" />
+      <created>1745541848864</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1745541848864</updated>
+      <workItem from="1745541850206" duration="5816000" />
+      <workItem from="1745871701255" duration="614000" />
+      <workItem from="1745956627431" duration="6245000" />
+      <workItem from="1746207826207" duration="7000" />
+      <workItem from="1746219144980" duration="5747000" />
+      <workItem from="1746461738710" duration="195000" />
+    </task>
+    <task id="LOCAL-00001" summary="feat: Implement parameterized SQL queries via OpenAI&#10;fix: Add robust SQL validation using sqlparse&#10;refactor: Update DB schema and integrate OpenAI client">
+      <option name="closed" value="true" />
+      <created>1745545585551</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1745545585551</updated>
+    </task>
+    <task id="LOCAL-00002" summary="feat: Implement charting, memory, error handling, and refactor API&#10;&#10;Adds major backend features including:&#10;- Chart Generation: Integrates Matplotlib to create bar, pie, line, and scatter plots based on AI analysis of user requests and query results. API now returns PNG images when charts are requested.&#10;- Conversational Memory: Implements basic in-memory session management to allow the AI to use recent conversation history for context.&#10;- Error Handling: Significantly improved error catching and reporting in API routes and database utilities for better debugging.&#10;- Refactor: Code for AI interaction and SQL validation was refactored into separate `ai_processing.py` and `sql_validator.py` modules for better organization (though temporarily consolidated back into `api.py` during 501 error debugging).&#10;- AI Explanations: Added capability for AI to explain data results in natural language.">
+      <option name="closed" value="true" />
+      <created>1746224676189</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1746224676189</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="User">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="*" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: Implement parameterized SQL queries via OpenAI&#10;fix: Add robust SQL validation using sqlparse&#10;refactor: Update DB schema and integrate OpenAI client" />
+    <MESSAGE value="feat: Implement charting, memory, error handling, and refactor API&#10;&#10;Adds major backend features including:&#10;- Chart Generation: Integrates Matplotlib to create bar, pie, line, and scatter plots based on AI analysis of user requests and query results. API now returns PNG images when charts are requested.&#10;- Conversational Memory: Implements basic in-memory session management to allow the AI to use recent conversation history for context.&#10;- Error Handling: Significantly improved error catching and reporting in API routes and database utilities for better debugging.&#10;- Refactor: Code for AI interaction and SQL validation was refactored into separate `ai_processing.py` and `sql_validator.py` modules for better organization (though temporarily consolidated back into `api.py` during 501 error debugging).&#10;- AI Explanations: Added capability for AI to explain data results in natural language." />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Implement charting, memory, error handling, and refactor API&#10;&#10;Adds major backend features including:&#10;- Chart Generation: Integrates Matplotlib to create bar, pie, line, and scatter plots based on AI analysis of user requests and query results. API now returns PNG images when charts are requested.&#10;- Conversational Memory: Implements basic in-memory session management to allow the AI to use recent conversation history for context.&#10;- Error Handling: Significantly improved error catching and reporting in API routes and database utilities for better debugging.&#10;- Refactor: Code for AI interaction and SQL validation was refactored into separate `ai_processing.py` and `sql_validator.py` modules for better organization (though temporarily consolidated back into `api.py` during 501 error debugging).&#10;- AI Explanations: Added capability for AI to explain data results in natural language." />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Inventory_AI_Agent$main.coverage" NAME="main Coverage Results" MODIFIED="1745543057579" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/app" />
+    <SUITE FILE_PATH="coverage/Inventory_AI_Agent$api.coverage" NAME="api Coverage Results" MODIFIED="1746220910468" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/app/routes" />
+  </component>
+</project>
