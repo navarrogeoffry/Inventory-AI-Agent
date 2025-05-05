@@ -36,7 +36,7 @@ class QueryResponse(BaseModel):
     explanation: str | None = None # AI explanation or status message
     error: str | None = None # Error message if status is 'error' or 'warning'
     session_id: str # Always return session ID for client to use next time
-
+    chart_url: str | None = None
 
 # Create the API router instance
 router = APIRouter()
@@ -56,14 +56,20 @@ async def process_query(request: QueryRequest):
     """
     logger.info(f"Received query: '{request.natural_language_query}' from user: {request.user_id}, session: {request.session_id}")
 
-    # --- Session and History Management ---
-    session_id = request.session_id
-    if session_id and session_id in conversation_histories:
-        history = conversation_histories[session_id]; logger.info(f"Using session {session_id} with {len(history)} turns.")
+# --- Session and History Management ---
+    if request.session_id and request.session_id in conversation_histories:
+        session_id = request.session_id
+        history = conversation_histories[session_id]
+        logger.info(f"Using existing session {session_id} with {len(history)} turns.")
     else:
-        session_id = str(uuid.uuid4()); history = []; conversation_histories[session_id] = history; logger.info(f"Started new session {session_id}.")
+        session_id = request.session_id or str(uuid.uuid4())
+        history = []
+        conversation_histories[session_id] = history
+        logger.info(f"Started new session {session_id}.")
+
     current_user_message = {"role": "user", "content": request.natural_language_query}
     limited_history = history[-(MAX_HISTORY_TURNS * 2):]
+
 
     # --- Initialize variables ---
     sql_template: str | None = None; params: list | None = None; response_type: str | None = "data"; chart_type: str | None = None
@@ -115,6 +121,15 @@ async def process_query(request: QueryRequest):
                 logger.info(f"Attempting chart: '{chart_type}', x_sug='{x_col_suggestion}', y_sug='{y_col_suggestion}'")
                 image_buffer: io.BytesIO | None = None; plot_title = f"Chart: {request.natural_language_query}"
                 x_col, y_col = x_col_suggestion, y_col_suggestion; actual_columns = list(db_results[0].keys())
+                
+                #logging debug delete this
+                logger.info(f"Original AI columns: x='{x_col_suggestion}', y='{y_col_suggestion}'")
+                logger.info(f"Actual fallback columns: x='{x_col}', y='{y_col}'")
+                logger.info(f"Available columns: {actual_columns}")
+                #end debug logging
+
+
+
                 # Column fallback logic...
                 if x_col is None or x_col not in actual_columns: x_col = next((k for k in actual_columns if isinstance(db_results[0][k], str)), actual_columns[0])
                 if y_col is None or y_col not in actual_columns:
@@ -131,15 +146,45 @@ async def process_query(request: QueryRequest):
                 if plot_func: image_buffer = plot_func(db_results, x_col=x_col, y_col=y_col, title=plot_title)
                 else: error_msg = f"Unknown chart type '{chart_type}'."; response_type = "data"
                 # Return image if successful
+                
                 if image_buffer:
-                    logger.info("Returning generated chart as image response.")
-                    history.append(current_user_message); history.append({"role": "assistant", "content": f"Generated a {chart_type} chart."})
-                    conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
-                    return StreamingResponse(image_buffer, media_type="image/png")
-                else: # Plotting failed
-                     logger.warning("Plotting function failed."); response_type = "data"; status_msg = "warning"
-                     error_msg = error_msg or "Failed to generate requested chart."; ai_explanation = error_msg
-                     assistant_response_content = ai_explanation
+                    logger.info("Saving chart image and returning URL.")
+
+                    # Create a filename using session ID and timestamp
+                filename = f"chart_{session_id[:8]}_{uuid.uuid4().hex[:8]}.png"
+                file_path = f"static/{filename}"
+
+                # Save image to static directory
+                with open(file_path, "wb") as f:
+                    f.write(image_buffer.read())
+                    logger.info(f"Saved chart to: {file_path}")
+
+
+                # Append chart message to history
+                chart_url = f"/static/{filename}"
+                history.append(current_user_message)
+                history.append({"role": "assistant", "content": f"Generated a {chart_type} chart.", "chart_url": chart_url})
+                conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
+
+                 # Return chart URL in JSON
+                return QueryResponse(
+                    status="success",
+                    natural_query=request.natural_language_query,
+                    sql_query=None,
+                    results=None,
+                    explanation=None,
+                    error=None,
+                    session_id=session_id,
+                    chart_url=chart_url  #  Add this to QueryResponse model
+                )
+
+            # fallback if image_buffer was None
+            logger.warning("Plotting function failed.")
+            response_type = "data"
+            status_msg = "warning"
+            error_msg = error_msg or "Failed to generate requested chart."
+            ai_explanation = error_msg
+            assistant_response_content = ai_explanation
 
         # 5. If response_type is "data", generate explanation and return JSON
         if response_type == "data":

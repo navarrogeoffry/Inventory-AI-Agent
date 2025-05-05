@@ -5,7 +5,16 @@ from app.routes import api # Make sure api router is imported
 from app.db import init_db # Import init_db if you want DB init on startup
 import logging
 import os
+
 from dotenv import load_dotenv # Import if using .env file
+from fastapi.staticfiles import StaticFiles
+
+
+#allow CORS
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 
 # Load .env file if it exists (for OPENAI_API_KEY)
 load_dotenv()
@@ -30,6 +39,18 @@ app = FastAPI(
     lifespan=lifespan # Include lifespan manager
 )
 
+
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # --- Include the API router WITH the prefix ---
 # This makes routes in api.py available under /api/...
 app.include_router(api.router, prefix="/api")
@@ -42,3 +63,7 @@ async def root():
 
 # Example run command (as comment):
 # uvicorn app.main:app --reload --port 8000
+
+
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
