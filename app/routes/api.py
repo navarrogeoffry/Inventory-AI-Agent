@@ -10,10 +10,10 @@ import uuid
 from typing import List, Dict, Any, Tuple
 
 # Import functions from refactored modules
-from app.db import execute_query
+from app.db import execute_query, execute_modification, check_item_exists, get_item_quantity
 from app.plotting import create_bar_chart, create_pie_chart, create_line_chart, create_scatter_plot
 from app.sql_validator import validate_sql # Import validation function
-from app.ai_processing import get_sql_and_chart_info, get_ai_explanation # Import AI functions
+from app.ai_processing import get_sql_and_chart_info, get_ai_explanation, get_modification_intent # Import AI functions
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,8 @@ class QueryResponse(BaseModel):
     error: str | None = None # Error message if status is 'error' or 'warning'
     session_id: str # Always return session ID for client to use next time
     chart_url: str | None = None
+    modification_type: str | None = None # Type of modification performed (record_sale, add_stock)
+    modification_details: dict | None = None # Details of the modification
 
 # Create the API router instance
 router = APIRouter()
@@ -77,8 +79,24 @@ async def process_query(request: QueryRequest):
     status_msg: str | None = None # Initialize status to None
     error_msg: str | None = None; ai_explanation: str | None = None
     assistant_response_content: str | None = None # For history
+    modification_type: str | None = None
+    modification_details: dict | None = None
 
     try:
+        # 0. Check for data modification intent
+        action_type, action_details = await get_modification_intent(
+            request.natural_language_query, limited_history
+        )
+        
+        # If this is a modification request
+        if action_type in ["record_sale", "add_stock"] and action_details:
+            logger.info(f"Detected modification intent: {action_type}")
+            return await process_modification(
+                action_type, action_details, 
+                request.natural_language_query, session_id, 
+                current_user_message, limited_history
+            )
+        
         # 1. Get info from AI (Call refactored function)
         (sql_template, params, response_type, chart_type,
          x_col_suggestion, y_col_suggestion) = await get_sql_and_chart_info(
@@ -244,3 +262,133 @@ async def process_query(request: QueryRequest):
         results=None, explanation=None, error=final_error_msg, session_id=session_id
     )
     return error_response
+
+async def process_modification(
+    action_type: str, 
+    action_details: dict, 
+    natural_query: str, 
+    session_id: str, 
+    current_user_message: dict, 
+    history: list
+) -> QueryResponse:
+    """
+    Processes data modification requests (record_sale, add_stock).
+    Performs pre-execution checks, validates and executes SQL update statements,
+    and returns appropriate response.
+    """
+    logger.info(f"Processing modification: {action_type} with details: {action_details}")
+    
+    # Convert item name to uppercase for consistent database operations
+    item_name = action_details.get("item_name", "").upper()
+    quantity = action_details.get("quantity", 0)
+    
+    # Update the action_details with uppercase item name for response
+    action_details["item_name"] = item_name
+    
+    sql_template = None
+    params = []
+    status = "success"
+    error_msg = None
+    ai_explanation = None
+    db_results = None
+    
+    try:
+        # 1. Check if item exists
+        if not check_item_exists(item_name):
+            logger.warning(f"Item '{item_name}' does not exist in inventory.")
+            status = "error"
+            error_msg = f"Item '{item_name}' not found in inventory. Please add this item first."
+            raise ValueError(error_msg)
+        
+        # 2. For record_sale, ensure sufficient stock is available
+        if action_type == "record_sale":
+            available_quantity = get_item_quantity(item_name)
+            if available_quantity < quantity:
+                logger.warning(f"Insufficient stock for sale: requested {quantity}, available {available_quantity}.")
+                status = "error"
+                error_msg = f"Cannot record sale: only {available_quantity} units of '{item_name}' available, but tried to sell {quantity}."
+                raise ValueError(error_msg)
+            
+            # Generate UPDATE statement for recording a sale
+            sql_template = """
+            UPDATE inventory 
+            SET quantity_sold = quantity_sold + ?, 
+                quantity_available = quantity_available - ? 
+            WHERE item = ?
+            """
+            params = [quantity, quantity, item_name]
+            
+        elif action_type == "add_stock":
+            # Generate UPDATE statement for adding stock
+            sql_template = """
+            UPDATE inventory 
+            SET quantity_available = quantity_available + ? 
+            WHERE item = ?
+            """
+            params = [quantity, item_name]
+        
+        # 3. Validate the SQL statement
+        if not validate_sql(sql_template):
+            logger.warning("SQL validation failed for modification.")
+            status = "error"
+            error_msg = "SQL validation failed for the modification operation."
+            raise ValueError(error_msg)
+        
+        # 4. Execute the modification
+        rows_affected, db_error = execute_modification(sql_template, tuple(params))
+        
+        if db_error:
+            status = "error"
+            error_msg = db_error
+            raise ValueError(db_error)
+        
+        if rows_affected == 0:
+            status = "warning"
+            error_msg = f"No rows were affected. The item '{item_name}' may not exist."
+            ai_explanation = error_msg
+        else:
+            # 5. Check the new state and generate explanation
+            if action_type == "record_sale":
+                # Query the updated state
+                query = "SELECT * FROM inventory WHERE item = ?"
+                db_results = execute_query(query, (item_name,))
+                remaining = db_results[0].get('quantity_available', 0) if db_results else 0
+                
+                ai_explanation = f"Recorded sale of {quantity} units of '{item_name}'. Remaining stock: {remaining} units."
+            else:  # add_stock
+                # Query the updated state
+                query = "SELECT * FROM inventory WHERE item = ?"
+                db_results = execute_query(query, (item_name,))
+                new_quantity = db_results[0].get('quantity_available', 0) if db_results else 0
+                
+                ai_explanation = f"Added {quantity} units of '{item_name}' to inventory. New stock level: {new_quantity} units."
+    
+    except ValueError as ve:
+        logger.error(f"Error during modification: {ve}")
+        status = "error"
+        error_msg = str(ve)
+        ai_explanation = error_msg
+    except Exception as e:
+        logger.exception(f"Unexpected error during modification: {e}")
+        status = "error"
+        error_msg = f"Unexpected error during modification: {str(e)}"
+        ai_explanation = error_msg
+    
+    # Update conversation history
+    assistant_response = ai_explanation or error_msg or "Modification completed."
+    history.append(current_user_message)
+    history.append({"role": "assistant", "content": assistant_response})
+    conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
+    
+    # Return the response
+    return QueryResponse(
+        status=status,
+        natural_query=natural_query,
+        sql_query=f"Template: {sql_template} | Params: {params}" if sql_template else None,
+        results=db_results,
+        explanation=ai_explanation,
+        error=error_msg,
+        session_id=session_id,
+        modification_type=action_type,
+        modification_details=action_details
+    )

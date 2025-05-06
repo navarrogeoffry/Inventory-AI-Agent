@@ -199,3 +199,106 @@ Results obtained (first {len(results_preview)} rows):
         logger.error(f"Unexpected error during explanation: {e}")
         return "Failed to generate explanation (unexpected error)."
 
+# --- OpenAI Call Function (Data Modification Intent Recognition) ---
+async def get_modification_intent(
+    natural_query: str,
+    history: List[Dict[str, str]]
+) -> Tuple[str | None, dict | None]:
+    """
+    Analyzes the natural language query to determine if it's a data modification request,
+    and extracts relevant details for actions like "Record Sale" or "Add Stock".
+    
+    Returns a tuple of (action_type, action_details) where:
+    - action_type: One of "record_sale", "add_stock", or None (if not a modification intent)
+    - action_details: Dictionary with parameters needed for the modification, or None
+    """
+    if not openai_client:
+        logger.error("OpenAI client is not available. Cannot process modification intent.")
+        return None, None
+
+    system_prompt = f"""
+You are an AI assistant that identifies inventory modification requests and extracts specific details.
+Focus on recognizing two types of modifications:
+1. "Record Sale" - when a user wants to record that they sold some items
+2. "Add Stock" - when a user wants to add new inventory
+
+Your goal is to generate a JSON object with these keys:
+1. "action_type": Either "record_sale", "add_stock", or "not_modification" (if query isn't a modification request)
+2. "item_name": The name of the inventory item being modified
+3. "quantity": The quantity being sold or added
+4. "confidence": A number from 0.0-1.0 indicating your confidence in this interpretation
+
+Database Schema:
+{DB_SCHEMA}
+
+Example 1: "I sold 5 laptops today"
+Response: {{"action_type": "record_sale", "item_name": "laptops", "quantity": 5, "confidence": 0.95}}
+
+Example 2: "We just received 20 new keyboards"
+Response: {{"action_type": "add_stock", "item_name": "keyboards", "quantity": 20, "confidence": 0.9}}
+
+Example 3: "How many monitors do we have in stock?"
+Response: {{"action_type": "not_modification", "item_name": null, "quantity": null, "confidence": 0.95}}
+
+Output ONLY the JSON object. Do not include explanations or markdown.
+"""
+    # Prepare messages list including history
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(history) # Add past conversation turns
+    messages.append({"role": "user", "content": natural_query}) # Add current query
+
+    try:
+        logger.info(f"Sending modification intent analysis request to OpenAI...")
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o", messages=messages, temperature=0.1, max_tokens=250, n=1, stop=None, response_format={"type": "json_object"}
+        )
+        response_content = response.choices[0].message.content.strip()
+        logger.info(f"Received modification intent JSON from OpenAI: '{response_content}'")
+
+        # Parse the JSON response
+        try:
+            data = json.loads(response_content)
+            action_type = data.get("action_type")
+            item_name = data.get("item_name")
+            quantity = data.get("quantity")
+            confidence = data.get("confidence", 0.0)
+
+            # If not a modification or low confidence, return None
+            if action_type == "not_modification" or confidence < 0.7:
+                logger.info(f"Not a modification intent or low confidence: {action_type}, confidence: {confidence}")
+                return None, None
+
+            # Validate required fields for modification intents
+            if action_type in ["record_sale", "add_stock"]:
+                if not item_name or not isinstance(quantity, (int, float)) or quantity <= 0:
+                    logger.warning(f"Invalid modification details: item_name={item_name}, quantity={quantity}")
+                    return None, None
+                
+                # Create action details dictionary
+                action_details = {
+                    "item_name": item_name,
+                    "quantity": int(quantity),  # Ensure quantity is an integer
+                    "confidence": confidence
+                }
+                
+                logger.info(f"Identified modification intent: {action_type} with details: {action_details}")
+                return action_type, action_details
+            
+            # If action_type is not recognized
+            logger.warning(f"Unrecognized action_type: {action_type}")
+            return None, None
+
+        except json.JSONDecodeError as jde:
+            logger.error(f"Failed JSON decode for modification intent: {jde} | Response: {response_content}")
+            return None, None
+        except Exception as ve:
+            logger.error(f"Error processing modification intent response: {ve} | Response: {response_content}")
+            return None, None
+
+    except OpenAIError as e:
+        logger.error(f"OpenAI API error during modification intent analysis: {e}")
+        return None, None
+    except Exception as e:
+        logger.error(f"Unexpected error during modification intent analysis: {e}")
+        return None, None
+
