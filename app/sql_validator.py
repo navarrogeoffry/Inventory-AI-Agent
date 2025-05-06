@@ -12,6 +12,8 @@ ALLOWED_TABLES = {
 }
 # Defines SQL functions the AI is allowed to use in queries
 ALLOWED_FUNCTIONS = {"count", "sum", "avg", "max", "min", "strftime"}
+# Defines allowed arithmetic operators for expressions
+ALLOWED_OPERATORS = {"+", "-", "*", "/", "%"}
 
 def validate_sql(sql_query: str) -> bool:
     """
@@ -50,6 +52,7 @@ def validate_sql(sql_query: str) -> bool:
         functions = set()   # SQL functions used (e.g., COUNT, SUM)
         tables = set()      # Tables explicitly mentioned after FROM/JOIN
         columns = set()     # Columns explicitly used in the query
+        expressions = []    # Calculated expressions
 
         # For SELECT statements, check if it contains our allowed table
         if statement_type == "SELECT":
@@ -59,16 +62,47 @@ def validate_sql(sql_query: str) -> bool:
                 tables.add("inventory")
             
             # Extract column names from SELECT clause
-            select_match = re.search(r'select\s+(.*?)\s+from', sql_lower)
+            select_match = re.search(r'select\s+(.*?)\s+from', sql_lower, re.DOTALL)
             if select_match:
                 select_columns = select_match.group(1).strip()
                 # Handle * wildcard
                 if select_columns == '*':
                     pass  # Allow all columns
                 else:
-                    # Split by commas to get individual columns
-                    col_list = [c.strip() for c in select_columns.split(',')]
+                    # Split by commas to get individual columns or expressions
+                    col_list = []
+                    in_parentheses = 0
+                    current_col = ""
+                    
+                    # Handle expressions with commas inside parentheses
+                    for char in select_columns:
+                        if char == '(' and in_parentheses == 0:
+                            in_parentheses += 1
+                            current_col += char
+                        elif char == ')' and in_parentheses > 0:
+                            in_parentheses -= 1
+                            current_col += char
+                        elif char == ',' and in_parentheses == 0:
+                            col_list.append(current_col.strip())
+                            current_col = ""
+                        else:
+                            current_col += char
+                    
+                    if current_col:
+                        col_list.append(current_col.strip())
+                    
                     for col in col_list:
+                        # Detect expressions (calculated columns)
+                        if '(' in col or any(op in col for op in ALLOWED_OPERATORS):
+                            expressions.append(col)
+                            # Skip further processing for expressions
+                            continue
+                        
+                        # Handle normal columns
+                        # Remove "as alias" if present
+                        if ' as ' in col:
+                            col = col.split(' as ')[0].strip()
+                        
                         # Remove table prefix if present
                         if '.' in col:
                             _, col_name = col.split('.', 1)
@@ -130,6 +164,11 @@ def validate_sql(sql_query: str) -> bool:
             logger.warning(f"Validation failed: No allowed tables found in query: {tables}")
             return False
 
+        # Validate expressions (calculated columns)
+        if statement_type == "SELECT" and expressions:
+            if not validate_expressions(expressions):
+                return False
+
         # Validate columns if explicitly extracted
         all_allowed_columns = set().union(*ALLOWED_TABLES.values())
         if columns:
@@ -143,7 +182,10 @@ def validate_sql(sql_query: str) -> bool:
         remaining_identifiers = identifiers - columns
         for ident in remaining_identifiers:
             # Check if the identifier is the table name, an allowed column, or an allowed function (used as alias)
-            if ident not in ALLOWED_TABLES and ident not in all_allowed_columns and ident not in ALLOWED_FUNCTIONS:
+            if (ident not in ALLOWED_TABLES and 
+                ident not in all_allowed_columns and 
+                ident not in ALLOWED_FUNCTIONS and
+                ident not in {"as", "total_profit", "profit_per_unit"}):  # Allow common alias names
                 logger.warning(f"Validation failed: Disallowed identifier (table/column/alias) used: {ident}")
                 return False
         
@@ -160,6 +202,53 @@ def validate_sql(sql_query: str) -> bool:
         # Catch any unexpected errors during parsing/validation
         logger.error(f"Error during SQL validation: {e}")
         return False
+
+def validate_expressions(expressions):
+    """
+    Validates calculated column expressions to ensure they use only allowed columns and operations.
+    """
+    all_allowed_columns = set().union(*ALLOWED_TABLES.values())
+    
+    for expr in expressions:
+        # Strip 'as alias' part if present
+        if " as " in expr.lower():
+            expr = expr.split(" as ", 1)[0].strip()
+            
+        # Extract all identifiers from the expression
+        # Simplistic approach: split by operators, strip whitespace, and check each part
+        parts = re.split(r'[\s\(\)\+\-\*\/\%\,]', expr)
+        parts = [p.strip() for p in parts if p.strip()]
+        
+        # Check each part is a valid column or number
+        for part in parts:
+            # Skip empty parts or numbers
+            if not part or part.replace('.', '', 1).isdigit():
+                continue
+                
+            # Check if this part is an allowed column
+            if part.lower() not in all_allowed_columns:
+                logger.warning(f"Validation failed: Expression contains disallowed column or value: {part}")
+                return False
+    
+    # Check for unsafe SQL syntax in expressions
+    unsafe_patterns = [
+        r'\bcase\b', r'\bwhen\b', r'\bthen\b', r'\belse\b', r'\bend\b',  # CASE statements
+        r'\bselect\b', r'\bfrom\b',  # Subqueries
+        r'\bunion\b', r'\bexcept\b', r'\bintersect\b',  # Set operations
+        r'\b(in|not\s+in)\b\s*\(',  # IN clauses
+        r'\bexists\b',  # EXISTS
+        r'\bcreate\b', r'\bdrop\b', r'\balter\b',  # DDL
+        r'\bdelete\b', r'\binsert\b',  # DML
+        r'\;',  # Multiple statements
+    ]
+    
+    for expr in expressions:
+        for pattern in unsafe_patterns:
+            if re.search(pattern, expr.lower()):
+                logger.warning(f"Validation failed: Expression contains unsafe SQL pattern: {pattern}")
+                return False
+    
+    return True
 
 def validate_update_statement(sql_query: str) -> bool:
     """
