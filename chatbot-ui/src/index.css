@@ -84,4 +84,15 @@
   .dark body {
     @apply bg-gray-900 text-white;
   }
+  
+  /* Loading animation */
+  @keyframes loadingDot {
+    0% { transform: translateY(0); opacity: 0.3; }
+    50% { transform: translateY(-4px); opacity: 0.8; }
+    100% { transform: translateY(0); opacity: 0.3; }
+  }
+  
+  .loading-dot {
+    animation: loadingDot 0.8s infinite ease-in-out;
+  }
 }

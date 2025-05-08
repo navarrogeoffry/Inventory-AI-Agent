@@ -1,5 +1,5 @@
 // MessageList.jsx
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Message from "./Message";
 
 export default function MessageList({ messages, darkMode }) {
@@ -21,9 +21,11 @@ export default function MessageList({ messages, darkMode }) {
       animate="show"
       className="space-y-4 py-3 px-1"
     >
-      {messages.map((message, index) => (
-        <Message key={index} message={message} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {messages.map((message, index) => (
+          <Message key={message.id || index} message={message} />
+        ))}
+      </AnimatePresence>
     </motion.div>
   );
 }

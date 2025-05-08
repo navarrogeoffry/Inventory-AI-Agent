@@ -144,3 +144,30 @@ For real-time monitoring during application use, running `tail -f logs/backend.l
 - Check the logs (as described above) for detailed error messages
 - If you see authentication errors in the logs, run `./setup_env.sh` to update your OpenAI API key
 
+### Shell/Terminal Compatibility Issues
+
+If you encounter errors like `python: command not found` when running the scripts in different terminals (e.g., iTerm vs. Terminal.app):
+
+1. Make the scripts executable (you only need to do this once):
+   ```bash
+   chmod +x start_app.sh setup_env.sh
+   ```
+
+2. If you're using a virtual environment, make sure it's activated:
+   ```bash
+   source venv/bin/activate  # or venv311/bin/activate
+   ```
+
+3. Try running the script with explicit bash:
+   ```bash
+   bash start_app.sh
+   ```
+
+4. If issues persist, manually verify your Python installation:
+   ```bash
+   which python
+   which python3
+   ```
+   
+The scripts have been updated to automatically detect Python in common locations, including virtual environments.
+

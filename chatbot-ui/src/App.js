@@ -21,6 +21,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   const messagesEndRef = useRef(null);
+  const hasInitializedChat = useRef(false); // Track if we've already initialized a chat
 
   const getMessages = () => {
     const activeChat = chats.find(c => c.sessionId === activeChatId);
@@ -86,7 +87,8 @@ export default function App() {
 
   // Start a new chat if none exists on first load
   useEffect(() => {
-    if (chats.length === 0) {
+    if (chats.length === 0 && !hasInitializedChat.current) {
+      hasInitializedChat.current = true;
       startNewChat();
     }
   }, [chats.length]);
@@ -109,16 +111,29 @@ export default function App() {
       return chat;
     }));
     
+    // Add a temporary "loading" message from the bot
+    const loadingMessageId = crypto.randomUUID();
+    setChats(prevChats => prevChats.map(chat => {
+      if (chat.sessionId === activeChatId) {
+        return { 
+          ...chat, 
+          messages: [...chat.messages, { 
+            sender: "bot", 
+            text: "", 
+            isLoading: true,
+            id: loadingMessageId 
+          }] 
+        };
+      }
+      return chat;
+    }));
+    
     // Set loading state for this specific chat
     setLoadingStates(prev => ({
       ...prev,
       [activeChatId]: true
     }));
     
-    // Start loading timestamp to ensure minimum loading time
-    const loadingStartTime = Date.now();
-    const minLoadingTime = 1500; // minimum 1.5 second loading
-
     // Get the backend port from environment variables or use default
     const backendPort = process.env.REACT_APP_BACKEND_PORT || 8000;
     const apiUrl = `http://localhost:${backendPort}/api/process_query`;
@@ -143,57 +158,58 @@ export default function App() {
       
       const botMessages = [];
       if (data.explanation) {
-        botMessages.push({ sender: "bot", text: data.explanation });
+        botMessages.push({ sender: "bot", text: data.explanation, id: crypto.randomUUID() });
       }
       if (data.results) {
         const resultsText = JSON.stringify(data.results, null, 2);
-        botMessages.push({ sender: "bot", text: resultsText });
+        botMessages.push({ sender: "bot", text: resultsText, id: crypto.randomUUID() });
       }
       if (data.chart_url) {
         // Get the backend port from environment variables or use default
         const backendPort = process.env.REACT_APP_BACKEND_PORT || 8000;
         const fullUrl = `http://localhost:${backendPort}${data.chart_url}`;
-        botMessages.push({ sender: "bot", image: fullUrl });
+        botMessages.push({ sender: "bot", image: fullUrl, id: crypto.randomUUID() });
       }
       
-      // Ensure loading shows for at least the minimum time
-      const loadingElapsed = Date.now() - loadingStartTime;
-      const remainingLoadTime = Math.max(0, minLoadingTime - loadingElapsed);
+      // Replace the loading message with actual response messages
+      setChats(prev => prev.map(chat => {
+        if (chat.sessionId === activeChatId) {
+          const filteredMessages = chat.messages.filter(msg => msg.id !== loadingMessageId);
+          return { ...chat, messages: [...filteredMessages, ...botMessages] };
+        }
+        return chat;
+      }));
       
-      setTimeout(() => {
-        setChats(prev => prev.map(chat =>
-          chat.sessionId === activeChatId
-            ? { ...chat, messages: [...chat.messages, ...botMessages] }
-            : chat
-        ));
-        
-        // Only turn off loading after messages are added
-        setLoadingStates(prev => ({
-          ...prev,
-          [activeChatId]: false
-        }));
-      }, remainingLoadTime);
+      // Turn off loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        [activeChatId]: false
+      }));
       
     } catch (err) {
       console.error("API error:", err);
       
-      // Ensure loading shows for at least the minimum time
-      const loadingElapsed = Date.now() - loadingStartTime;
-      const remainingLoadTime = Math.max(0, minLoadingTime - loadingElapsed);
+      // Replace loading message with error message
+      setChats(prev => prev.map(chat => {
+        if (chat.sessionId === activeChatId) {
+          const filteredMessages = chat.messages.filter(msg => msg.id !== loadingMessageId);
+          return { 
+            ...chat, 
+            messages: [...filteredMessages, { 
+              sender: "bot", 
+              text: "An error occurred. Please try again.", 
+              id: crypto.randomUUID() 
+            }] 
+          };
+        }
+        return chat;
+      }));
       
-      setTimeout(() => {
-        setChats(prev => prev.map(chat =>
-          chat.sessionId === activeChatId
-            ? { ...chat, messages: [...chat.messages, { sender: "bot", text: "An error occurred. Please try again." }] }
-            : chat
-        ));
-        
-        // Turn off loading after error message is added
-        setLoadingStates(prev => ({
-          ...prev,
-          [activeChatId]: false
-        }));
-      }, remainingLoadTime);
+      // Turn off loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        [activeChatId]: false
+      }));
     }
   };
 
@@ -472,16 +488,6 @@ export default function App() {
                 <MessageList messages={getMessages()} darkMode={darkMode} />
                 <div ref={messagesEndRef} />
               </>
-            )}
-            {isActiveLoading && (
-              <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-col items-center">
-                  <LoadingIndicator />
-                  <span className="mt-2 text-sm text-gray-600 dark:text-gray-300 font-medium">
-                    Analyzing your request...
-                  </span>
-                </div>
-              </div>
             )}
           </ChatWindow>
           

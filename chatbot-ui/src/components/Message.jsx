@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { User, Bot } from "lucide-react";
+import LoadingIndicator from "./LoadingIndicator";
 
 export default function Message({ message }) {
 	const isUser = message.sender === "user";
@@ -32,14 +33,23 @@ export default function Message({ message }) {
 	    
 	    {/* Message content */}
 	    <div className={`max-w-[80%] ${isTable ? 'w-full' : ''}`}>
-	      <div
+	      <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
 		className={`rounded-2xl px-4 py-3 shadow-sm ${
 		  isUser 
 		    ? 'bg-blue-700 dark:bg-blue-600 text-white' 
 		    : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100'
 		}`}
 	      >
-		{message.image ? (
+            {message.isLoading ? (
+              <div className="flex flex-col items-center py-2">
+                <LoadingIndicator />
+                <span className="mt-2 text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  AI is thinking...
+                </span>
+              </div>
+            ) : message.image ? (
 		  <div className="overflow-hidden rounded-lg">
 		    <img
 		      src={message.image}
@@ -86,7 +96,7 @@ export default function Message({ message }) {
 		) : (
 		  <p className="whitespace-pre-wrap text-sm md:text-base">{message.text}</p>
 		)}
-	      </div>
+	      </motion.div>
 	    </div>
 	    
 	    {/* Avatar for user messages */}

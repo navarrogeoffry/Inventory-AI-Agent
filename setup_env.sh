@@ -13,6 +13,30 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}Inventory AI Agent - Environment Setup${NC}"
 echo
 
+# Get the directory where this script is located
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+# Find a working Python interpreter
+PYTHON_CMD=""
+
+# Check for Python in common locations
+if [ -f "venv/bin/python" ]; then
+  PYTHON_CMD="$DIR/venv/bin/python"
+elif [ -f "venv311/bin/python" ]; then
+  PYTHON_CMD="$DIR/venv311/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo -e "${RED}ERROR: Python not found.${NC}"
+  echo -e "Please install Python or make sure it's in your PATH."
+  exit 1
+fi
+
+echo -e "Using Python interpreter: ${BLUE}$PYTHON_CMD${NC}"
+
 # Check if .env file exists
 if [ -f .env ]; then
   echo -e "${YELLOW}An .env file already exists. Do you want to overwrite it? (y/n)${NC}"
@@ -63,8 +87,7 @@ echo -e "${BLUE}Testing API key...${NC}"
 export OPENAI_API_KEY="$api_key"
 
 # Try to run a simple test using Python
-if command -v python >/dev/null 2>&1; then
-  python -c "
+$PYTHON_CMD -c "
 import os
 try:
   import openai
@@ -72,13 +95,10 @@ try:
   client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
   print('OpenAI module is installed and API key is set.')
 except ImportError:
-  print('WARNING: OpenAI module is not installed. Run: pip install openai')
+  print('WARNING: OpenAI module is not installed. Run: $PYTHON_CMD -m pip install openai')
 except Exception as e:
   print(f'ERROR testing API key: {str(e)}')
 " 2>&1
-else
-  echo "Python not found. Cannot test API key."
-fi
 
 echo
 echo -e "${YELLOW}Next steps:${NC}"

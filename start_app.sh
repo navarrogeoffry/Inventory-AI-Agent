@@ -16,6 +16,26 @@ echo -e "${GREEN}Starting Inventory AI Agent...${NC}"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+# Find a working Python interpreter
+PYTHON_CMD=""
+
+# Check for Python in common locations
+if [ -f "venv/bin/python" ]; then
+  PYTHON_CMD="$DIR/venv/bin/python"
+elif [ -f "venv311/bin/python" ]; then
+  PYTHON_CMD="$DIR/venv311/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo -e "${RED}ERROR: Python not found.${NC}"
+  echo -e "Please install Python or make sure it's in your PATH."
+  exit 1
+fi
+
+echo -e "Using Python interpreter: ${BLUE}$PYTHON_CMD${NC}"
+
 # Check for OpenAI API key
 if [ -f .env ]; then
   source .env
@@ -41,7 +61,7 @@ trap 'kill $(jobs -p) 2>/dev/null' EXIT
 # Start the Python backend server with logging
 echo -e "${BLUE}Starting backend server...${NC}"
 mkdir -p logs
-PYTHONPATH="$DIR" python app/main.py > logs/backend.log 2>&1 &
+PYTHONPATH="$DIR" $PYTHON_CMD app/main.py > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for the backend to initialize (longer wait time)
@@ -62,7 +82,7 @@ else
   echo -e "Please check logs/backend.log for details."
   echo -e "Common issues:"
   echo -e "- Invalid OpenAI API key"
-  echo -e "- Missing dependencies (run ${BLUE}pip install -r requirements.txt${NC})"
+  echo -e "- Missing dependencies (run ${BLUE}$PYTHON_CMD -m pip install -r requirements.txt${NC})"
   exit 1
 fi
 
@@ -98,7 +118,7 @@ while true; do
   if ! ps -p $BACKEND_PID > /dev/null; then
     echo -e "${RED}Backend server stopped unexpectedly. Restarting...${NC}"
     cd "$DIR"
-    PYTHONPATH="$DIR" python app/main.py >> logs/backend.log 2>&1 &
+    PYTHONPATH="$DIR" $PYTHON_CMD app/main.py >> logs/backend.log 2>&1 &
     BACKEND_PID=$!
     sleep 2
   fi
