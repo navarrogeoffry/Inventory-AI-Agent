@@ -199,3 +199,9 @@ chatbot-ui/.env
 
 # OS
 Thumbs.db
+
+# Database
+inventory.db
+
+# Generated charts
+static/chart_*.png
