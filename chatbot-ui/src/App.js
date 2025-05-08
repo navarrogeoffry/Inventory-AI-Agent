@@ -12,7 +12,7 @@ import LoadingIndicator from "./components/LoadingIndicator";
 export default function App() {
   const [chats, setChats] = useState([]); // List of chat sessions
   const [activeChatId, setActiveChatId] = useState(null); // Current session ID
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({}); // Track loading state per chat
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -21,6 +21,31 @@ export default function App() {
     return saved ? JSON.parse(saved) : window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   const messagesEndRef = useRef(null);
+
+  const getMessages = () => {
+    const activeChat = chats.find(c => c.sessionId === activeChatId);
+    return activeChat?.messages || [];
+  };
+
+  const getChatTitle = (chat) => {
+    if (!chat) return "New Conversation";
+    
+    // If there are messages, use the first user message as the title
+    const firstUserMessage = chat.messages.find(m => m.sender === "user");
+    if (firstUserMessage) {
+      // Truncate long messages to 30 chars
+      return firstUserMessage.text.length > 30 
+        ? firstUserMessage.text.substring(0, 30) + "..." 
+        : firstUserMessage.text;
+    }
+    
+    return `Chat ${chat.sessionId.slice(0, 6)}`;
+  };
+
+  // Helper function to check if a chat is loading
+  const isChatLoading = (sessionId) => {
+    return loadingStates[sessionId] === true;
+  };
 
   // Save dark mode preference
   useEffect(() => {
@@ -33,77 +58,73 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Handle responsive behavior
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      
-      // Auto-close sidebar on mobile only when first detected as mobile
-      if (mobile && !isMobile) {
-        setSidebarOpen(false);
-      } else if (!mobile && isMobile && !sidebarOpen) {
-        // Auto-open sidebar when transitioning from mobile to desktop
-        setSidebarOpen(true);
-      }
-    };
-    
-    // Check initially
-    checkMobile();
-    
-    // Add resize listener
-    window.addEventListener('resize', checkMobile);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [sidebarOpen, isMobile]);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chats, activeChatId]);
-
-  // Initialize on first load
-  useEffect(() => {
-    if (!activeChatId && chats.length === 0) startNewChat();
-  }, [activeChatId, chats.length, startNewChat]);
-
-  const getMessages = () => chats.find(c => c.sessionId === activeChatId)?.messages || [];
-  
-  const getChatTitle = (chat) => {
-    const firstUserMessage = chat.messages.find(m => m.sender === "user")?.text;
-    if (firstUserMessage) {
-      return firstUserMessage.length > 25 
-        ? firstUserMessage.substring(0, 25) + "..." 
-        : firstUserMessage;
+  // Check if on mobile/small screen
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 768);
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
     }
-    return `Chat ${chat.sessionId.slice(0, 6)}`;
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  function startNewChat() {
+  useEffect(() => {
+    // Initial check on component mount
+    checkMobile();
+    // Add listener for resize events
+    window.addEventListener("resize", checkMobile);
+    // Clean up event listener on unmount
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const startNewChat = () => {
     const newSessionId = crypto.randomUUID();
-    setChats([{ sessionId: newSessionId, messages: [] }, ...chats]);
+    setChats(prevChats => [{
+      sessionId: newSessionId,
+      messages: []
+    }, ...prevChats]);
     setActiveChatId(newSessionId);
   };
 
+  // Start a new chat if none exists on first load
+  useEffect(() => {
+    if (chats.length === 0) {
+      startNewChat();
+    }
+  }, [chats.length]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [getMessages().length]);
+
   const handleSend = async (userMessage) => {
+    if (!userMessage.trim()) return;
+    
     const newMessage = { sender: "user", text: userMessage };
-    const updatedChats = chats.map(chat => {
+    setChats(prevChats => prevChats.map(chat => {
       if (chat.sessionId === activeChatId) {
         return { ...chat, messages: [...chat.messages, newMessage] };
       }
       return chat;
-    });
-    setChats(updatedChats);
-    setIsLoading(true);
+    }));
+    
+    // Set loading state for this specific chat
+    setLoadingStates(prev => ({
+      ...prev,
+      [activeChatId]: true
+    }));
     
     // Start loading timestamp to ensure minimum loading time
     const loadingStartTime = Date.now();
-    const minLoadingTime = 1000; // minimum 1 second loading
+    const minLoadingTime = 1500; // minimum 1.5 second loading
 
+    // Get the backend port from environment variables or use default
+    const backendPort = process.env.REACT_APP_BACKEND_PORT || 8000;
+    const apiUrl = `http://localhost:${backendPort}/api/process_query`;
+    
     try {
-      const response = await fetch("http://localhost:8000/api/process_query", {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -129,43 +150,67 @@ export default function App() {
         botMessages.push({ sender: "bot", text: resultsText });
       }
       if (data.chart_url) {
-        const fullUrl = `http://localhost:8000${data.chart_url}`;
+        // Get the backend port from environment variables or use default
+        const backendPort = process.env.REACT_APP_BACKEND_PORT || 8000;
+        const fullUrl = `http://localhost:${backendPort}${data.chart_url}`;
         botMessages.push({ sender: "bot", image: fullUrl });
       }
       
-      setChats(prev => prev.map(chat =>
-        chat.sessionId === activeChatId
-          ? { ...chat, messages: [...chat.messages, ...botMessages] }
-          : chat
-      ));
-    } catch (err) {
-      console.error("API error:", err);
-      setChats(prev => prev.map(chat =>
-        chat.sessionId === activeChatId
-          ? { ...chat, messages: [...chat.messages, { sender: "bot", text: "An error occurred. Please try again." }] }
-          : chat
-      ));
-    } finally {
       // Ensure loading shows for at least the minimum time
       const loadingElapsed = Date.now() - loadingStartTime;
       const remainingLoadTime = Math.max(0, minLoadingTime - loadingElapsed);
       
-      if (remainingLoadTime > 0) {
-        setTimeout(() => {
-          setIsLoading(false);
-        }, remainingLoadTime);
-      } else {
-        setIsLoading(false);
-      }
+      setTimeout(() => {
+        setChats(prev => prev.map(chat =>
+          chat.sessionId === activeChatId
+            ? { ...chat, messages: [...chat.messages, ...botMessages] }
+            : chat
+        ));
+        
+        // Only turn off loading after messages are added
+        setLoadingStates(prev => ({
+          ...prev,
+          [activeChatId]: false
+        }));
+      }, remainingLoadTime);
+      
+    } catch (err) {
+      console.error("API error:", err);
+      
+      // Ensure loading shows for at least the minimum time
+      const loadingElapsed = Date.now() - loadingStartTime;
+      const remainingLoadTime = Math.max(0, minLoadingTime - loadingElapsed);
+      
+      setTimeout(() => {
+        setChats(prev => prev.map(chat =>
+          chat.sessionId === activeChatId
+            ? { ...chat, messages: [...chat.messages, { sender: "bot", text: "An error occurred. Please try again." }] }
+            : chat
+        ));
+        
+        // Turn off loading after error message is added
+        setLoadingStates(prev => ({
+          ...prev,
+          [activeChatId]: false
+        }));
+      }, remainingLoadTime);
     }
   };
 
   // Delete chat
   const deleteChat = (sessionId) => {
+    // Also remove loading state for this chat
+    setLoadingStates(prev => {
+      const newStates = {...prev};
+      delete newStates[sessionId];
+      return newStates;
+    });
+    
     setChats(prev => prev.filter(chat => chat.sessionId !== sessionId));
     if (activeChatId === sessionId) {
-      setActiveChatId(chats.length > 1 ? chats[0].sessionId : null);
-      if (!chats[0]) startNewChat();
+      const newActive = chats.find(c => c.sessionId !== sessionId);
+      setActiveChatId(newActive ? newActive.sessionId : null);
+      if (!newActive) startNewChat();
     }
   };
 
@@ -173,6 +218,9 @@ export default function App() {
   const handleSuggestedPrompt = (promptText) => {
     handleSend(promptText);
   };
+
+  // Check if the active chat is loading
+  const isActiveLoading = activeChatId ? isChatLoading(activeChatId) : false;
 
   return (
     <div className={`flex h-screen ${darkMode ? 'dark' : ''}`}>
@@ -187,10 +235,16 @@ export default function App() {
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           
-          <h2 className="ml-4 font-medium text-gray-800 dark:text-white truncate">
+          <h2 className="ml-4 font-medium text-gray-800 dark:text-white truncate flex items-center">
             {activeChatId && chats.find(c => c.sessionId === activeChatId) 
               ? getChatTitle(chats.find(c => c.sessionId === activeChatId))
               : "New Conversation"}
+              
+            {isActiveLoading && (
+              <span className="ml-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full animate-pulse">
+                Processing...
+              </span>
+            )}
           </h2>
         </div>
         
@@ -318,7 +372,7 @@ export default function App() {
                     chats.map(chat => (
                       <motion.div
                         key={chat.sessionId}
-                        layoutId={`chat-${chat.sessionId}-mobile`}
+                        layoutId={`mobile-chat-${chat.sessionId}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -327,8 +381,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             setActiveChatId(chat.sessionId);
-                            // Close sidebar on mobile after selection
-                            if (isMobile) setSidebarOpen(false);
+                            setSidebarOpen(false); // Auto-close on mobile
                           }}
                           className={`group w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
                             chat.sessionId === activeChatId 
@@ -357,15 +410,24 @@ export default function App() {
                   )}
                 </div>
               </div>
-              
-              <div className="p-4 text-xs text-center text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-                Inventory AI Agent v1.0
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Backdrop for mobile sidebar */}
+        <AnimatePresence>
+          {sidebarOpen && isMobile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black z-30 pointer-events-auto"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
-        {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-800 relative">
           {/* Chat window */}
           <ChatWindow darkMode={darkMode} className="flex-1 relative overflow-y-auto">
@@ -411,19 +473,25 @@ export default function App() {
                 <div ref={messagesEndRef} />
               </>
             )}
-            {isLoading && (
-              <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 z-50">
-                <LoadingIndicator />
+            {isActiveLoading && (
+              <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-col items-center">
+                  <LoadingIndicator />
+                  <span className="mt-2 text-sm text-gray-600 dark:text-gray-300 font-medium">
+                    Analyzing your request...
+                  </span>
+                </div>
               </div>
             )}
           </ChatWindow>
           
           {/* Input area */}
           <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-            <ChatInput onSend={handleSend} disabled={isLoading} darkMode={darkMode} />
+            <ChatInput onSend={handleSend} disabled={isActiveLoading} darkMode={darkMode} />
           </div>
         </div>
       </div>
     </div>
   );
 }
+

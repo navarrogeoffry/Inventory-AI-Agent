@@ -79,6 +79,9 @@ def validate_sql(sql_query: str) -> bool:
                         if char == '(' and in_parentheses == 0:
                             in_parentheses += 1
                             current_col += char
+                        elif char == '(' and in_parentheses > 0:
+                            in_parentheses += 1
+                            current_col += char
                         elif char == ')' and in_parentheses > 0:
                             in_parentheses -= 1
                             current_col += char
@@ -92,6 +95,14 @@ def validate_sql(sql_query: str) -> bool:
                         col_list.append(current_col.strip())
                     
                     for col in col_list:
+                        # Detect and extract aggregate functions for validation
+                        function_match = re.search(r'^(\w+)\(', col.lower())
+                        if function_match:
+                            func_name = function_match.group(1)
+                            if func_name in ALLOWED_FUNCTIONS:
+                                # This is an aggregate function, add it to functions set
+                                functions.add(func_name)
+                                
                         # Detect expressions (calculated columns)
                         if '(' in col or any(op in col for op in ALLOWED_OPERATORS):
                             expressions.append(col)
@@ -185,7 +196,9 @@ def validate_sql(sql_query: str) -> bool:
             if (ident not in ALLOWED_TABLES and 
                 ident not in all_allowed_columns and 
                 ident not in ALLOWED_FUNCTIONS and
-                ident not in {"as", "total_profit", "profit_per_unit"}):  # Allow common alias names
+                ident not in {"as", "total_profit", "profit_per_unit", "total_cost_value", "total_price_value", 
+                             "total_value", "avg_price", "avg_cost", "min_price", "max_price", "inventory_value",
+                             "count", "total", "average", "minimum", "maximum"}):  # Allow common alias names
                 logger.warning(f"Validation failed: Disallowed identifier (table/column/alias) used: {ident}")
                 return False
         
@@ -225,8 +238,8 @@ def validate_expressions(expressions):
             if not part or part.replace('.', '', 1).isdigit():
                 continue
                 
-            # Check if this part is an allowed column
-            if part.lower() not in all_allowed_columns:
+            # Check if this part is an allowed column or SQL function
+            if part.lower() not in all_allowed_columns and part.lower() not in ALLOWED_FUNCTIONS:
                 logger.warning(f"Validation failed: Expression contains disallowed column or value: {part}")
                 return False
     

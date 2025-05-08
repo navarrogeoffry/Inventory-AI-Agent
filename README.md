@@ -53,3 +53,94 @@ This project provides a backend API and frontend interface designed to deliver t
     * Dependencies: See `requirements.txt`
 * **Frontend (MVP):** HTML, CSS, JavaScript
 
+## Running the Application
+
+### Option 1: Using the Launcher Scripts (Recommended)
+
+#### For Mac/Linux Users:
+1. Open a terminal in the project root directory
+2. Run the launcher script:
+   ```bash
+   ./start_app.sh
+   ```
+3. Both the backend and frontend will start automatically
+4. The frontend will open in your default browser
+5. Press Ctrl+C in the terminal when you want to stop both servers
+
+#### For Windows Users:
+1. Open the project in File Explorer
+2. Double-click `start_app.bat`
+3. Two command windows will open (one for backend, one for frontend)
+4. The frontend will open in your default browser
+5. Close both command windows when you're done
+
+### Option 2: Manual Startup
+
+If you prefer to start the services manually:
+
+#### Backend Server:
+```bash
+# From project root directory
+PYTHONPATH=$(pwd) python app/main.py
+```
+
+#### Frontend Server:
+```bash
+# From project root directory
+cd chatbot-ui
+npm start
+```
+
+## Viewing Logs
+
+The application generates detailed logs to help with monitoring and troubleshooting. All logs are stored in the `logs/` directory:
+
+### Backend/API Logs
+These logs contain detailed information about API requests, database queries, and AI processing:
+
+```bash
+# View the entire backend log
+cat logs/backend.log
+
+# Watch backend logs in real-time (updates as new logs come in)
+tail -f logs/backend.log
+
+# See just the last 50 lines
+tail -n 50 logs/backend.log
+
+# Filter for errors only
+grep ERROR logs/backend.log
+
+# Filter for specific API endpoints
+grep "process_query" logs/backend.log
+```
+
+### Frontend Logs
+These logs show React application logs and build information:
+
+```bash
+# View frontend logs
+cat logs/frontend.log
+
+# Watch frontend logs in real-time
+tail -f logs/frontend.log
+```
+
+### Application Logs
+Internal application logs that may contain information not present in other log files:
+
+```bash
+# View application logs
+cat logs/app.log
+```
+
+For real-time monitoring during application use, running `tail -f logs/backend.log` in a separate terminal window is recommended.
+
+## Troubleshooting
+
+- If the backend server closes unexpectedly, check that your OpenAI API key is set correctly
+- Make sure all dependencies are installed: `pip install -r requirements.txt` and `cd chatbot-ui && npm install`
+- If port 8000 or 3000 is already in use, stop the existing process or change the port in the configuration
+- Check the logs (as described above) for detailed error messages
+- If you see authentication errors in the logs, run `./setup_env.sh` to update your OpenAI API key
+
