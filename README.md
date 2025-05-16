@@ -6,40 +6,41 @@ The Inventory AI Agent aims to be an intelligent assistant that empowers non-tec
 
 ## Features
 
-This project provides a backend API and frontend interface designed to deliver the following capabilities:
+This project provides a backend API and frontend interface with the following capabilities:
 
 1.  **Natural Language Interaction:**
     * Accept user commands and questions about inventory written in plain English (e.g., "How many widgets do we have?", "Show items low on stock", "Record sale of 5 units of X", "Add 20 units of Y").
-    * Leverage OpenAI's GPT models to accurately understand the user's intent, including follow-up questions within a conversation.
+    * Leverages OpenAI's GPT models to accurately understand the user's intent, including follow-up questions within a conversation.
 
 2.  **AI-Powered Database Operations:**
-    * Translate the user's intent into parameterized SQLite queries (`SELECT`, `UPDATE`).
-    * Focus operations on the inventory database and relevant data fields.
+    * Translates the user's intent into parameterized SQLite queries (`SELECT`, `UPDATE`).
+    * Focuses operations on the inventory database with validation to ensure safe queries.
 
 3.  **Data Querying & Analysis:**
-    * Retrieve specific data points or lists based on user criteria.
-    * Provide AI-generated natural language explanations summarizing query results.
+    * Retrieves specific data points or lists based on user criteria.
+    * Provides AI-generated natural language explanations summarizing query results.
 
 4.  **Inventory Management:**
-    * Allow users to update inventory levels through commands like recording sales or adding stock, modifying the appropriate data fields.
-    * Include necessary business logic checks (e.g., preventing sales if stock is insufficient, verifying item existence).
+    * Allows users to update inventory levels through commands like recording sales or adding stock.
+    * Includes business logic checks (e.g., preventing sales if stock is insufficient, verifying item existence).
 
 5.  **Data Visualization:**
-    * Generate relevant charts (bar, pie, line, scatter) based on user requests or query results.
-    * Return visualizations directly within the chat interface.
+    * Generates relevant charts (bar, pie, line, scatter) based on user requests or query results.
+    * Returns visualizations directly within the chat interface.
 
 6.  **Security & Safety:**
-    * Include a validation layer using `sqlparse` to ensure generated SQL (`SELECT`, `UPDATE`) only interacts with allowed database structures and follows safe patterns.
-    * Implement basic permissions to control who can perform data modification actions.
+    * Includes a validation layer using `sqlparse` to ensure generated SQL (`SELECT`, `UPDATE`) only interacts with allowed database structures and follows safe patterns.
+    * Implements transaction management for data modifications.
 
 7.  **Conversational Context:**
-    * Maintain session history to understand context and follow-up questions naturally.
+    * Maintains session history to understand context and follow-up questions naturally.
 
 8.  **User Interface:**
-    * Provide a simple, web-based chat interface for user interaction.
+    * Provides a responsive, web-based chat interface for user interaction.
+    * Supports displaying both text responses and visualizations.
 
 9.  **Error Handling:**
-    * Provide informative feedback if a query cannot be understood, fails validation, or encounters a database/logic issue.
+    * Provides informative feedback if a query cannot be understood, fails validation, or encounters a database/logic issue.
 
 ## Technology Stack
 
@@ -51,7 +52,10 @@ This project provides a backend API and frontend interface designed to deliver t
     * Charting: Matplotlib
     * SQL Parsing: sqlparse
     * Dependencies: See `requirements.txt`
-* **Frontend (MVP):** HTML, CSS, JavaScript
+* **Frontend:**
+    * React
+    * Tailwind CSS
+    * JavaScript/Node.js
 
 ## Running the Application
 
@@ -140,7 +144,7 @@ For real-time monitoring during application use, running `tail -f logs/backend.l
 
 - If the backend server closes unexpectedly, check that your OpenAI API key is set correctly
 - Make sure all dependencies are installed: `pip install -r requirements.txt` and `cd chatbot-ui && npm install`
-- If port 8000 or 3000 is already in use, stop the existing process or change the port in the configuration
+- If port 8000 or 3000 is already in use, the application will try alternate ports (up to 8003)
 - Check the logs (as described above) for detailed error messages
 - If you see authentication errors in the logs, run `./setup_env.sh` to update your OpenAI API key
 
