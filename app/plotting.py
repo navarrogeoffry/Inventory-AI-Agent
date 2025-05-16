@@ -1,9 +1,11 @@
 # app/plotting.py
-import matplotlib
-matplotlib.use('Agg') # Use Agg backend for non-interactive plotting (important for servers)
-import matplotlib.pyplot as plt
 import io
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import logging
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +31,13 @@ def create_bar_chart(data: list[dict], x_col: str, y_col: str, title: str = "Bar
     except Exception as e: logger.error(f"Error generating bar chart: {e}"); plt.close(fig); return None
 
 # --- Pie Chart Function (Unchanged) ---
-def create_pie_chart(data: list[dict], label_col: str, value_col: str, title: str = "Pie Chart") -> io.BytesIO | None:
+def create_pie_chart(data: list[dict], x_col: str, y_col: str, title: str = "Pie Chart") -> io.BytesIO | None:
     """Generates a simple pie chart."""
     if not data: logger.warning("No data for pie chart."); return None
-    if not label_col or not value_col: logger.warning("Label/Value columns needed for pie chart."); return None
+    if not x_col or not y_col: logger.warning("Label/Value columns needed for pie chart."); return None
     try:
-        labels = [str(item.get(label_col, 'N/A')) for item in data]
-        values = [float(item.get(value_col, 0)) for item in data]
+        labels = [str(item.get(x_col, 'N/A')) for item in data]
+        values = [float(item.get(y_col, 0)) for item in data]
         valid_data = [(l, v) for l, v in zip(labels, values) if v > 0]
         if not valid_data: logger.warning("No positive data for pie chart."); return None
         labels, values = zip(*valid_data)
@@ -47,7 +49,6 @@ def create_pie_chart(data: list[dict], label_col: str, value_col: str, title: st
         logger.info(f"Successfully generated pie chart: {title}")
         return buf
     except Exception as e: logger.error(f"Error generating pie chart: {e}"); plt.close(fig); return None
-
 # --- NEW: Line Chart Function ---
 def create_line_chart(data: list[dict], x_col: str, y_col: str, title: str = "Line Chart") -> io.BytesIO | None:
     """

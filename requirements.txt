@@ -28,4 +28,4 @@ typing-inspection==0.4.0
 typing_extensions==4.13.1
 uvicorn==0.34.0
 sqlparse==0.5.3
-matplotlib==3.9.0 # Or the latest version
+matplotlib==3.8.4 # Or the latest version

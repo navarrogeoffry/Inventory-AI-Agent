@@ -1,4 +1,5 @@
 # app/db.py
+import pathlib
 import sqlite3
 import os
 import logging
@@ -9,9 +10,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Use environment variable for DB URL or default to 'inventory.db' in the project root
-DATABASE_URL = os.getenv("DATABASE_URL", "inventory.db")
-logger.info(f"Database path configured to: {DATABASE_URL}")
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+DEFAULT_DB_PATH = PROJECT_ROOT / "inventory.db"
+DATABASE_URL = os.getenv("DATABASE_URL", str(DEFAULT_DB_PATH))
 
+logger.info(f"Database path configured to: {DATABASE_URL}")
+logger.info(f"Database absolute path: {os.path.abspath(DATABASE_URL)}")
 
 def get_db_connection():
     """Establishes a connection to the SQLite database."""
@@ -29,7 +33,7 @@ def get_db_connection():
 def init_db():
     """
     Initializes the database, ensuring the 'inventory' table exists
-    with the correct schema.
+    with the correct schema. Populates with sample data if empty.
     """
     logger.info("Attempting to initialize database tables (inventory table)...")
     conn = None
@@ -40,22 +44,39 @@ def init_db():
         # Create inventory table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS inventory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, -- Added standard primary key
-            item TEXT UNIQUE NOT NULL,       -- Name of the item
-            unit_cost REAL,                  -- Cost price per unit
-            unit_price REAL,                 -- Selling price per unit
-            quantity_sold INTEGER DEFAULT 0, -- Total units sold historically
-            quantity_available INTEGER DEFAULT 0 -- Current units in stock
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item TEXT UNIQUE NOT NULL,
+            unit_cost REAL,
+            unit_price REAL,
+            quantity_sold INTEGER DEFAULT 0,
+            quantity_available INTEGER DEFAULT 0
         );""")
         logger.info("Table 'inventory' checked/created.")
+
+        # Check if table is empty
+        cursor.execute("SELECT COUNT(*) FROM inventory;")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            logger.info("Inventory table is empty. Inserting sample data.")
+            sample_data = [
+                ("LAPTOP", 500.0, 800.0, 10, 50),
+                ("KEYBOARD", 20.0, 35.0, 5, 100),
+                ("MONITOR", 100.0, 150.0, 7, 30),
+                ("MOUSE", 10.0, 20.0, 12, 200),
+                ("PRINTER", 80.0, 120.0, 3, 15)
+            ]
+            cursor.executemany(
+                "INSERT INTO inventory (item, unit_cost, unit_price, quantity_sold, quantity_available) VALUES (?, ?, ?, ?, ?);",
+                sample_data
+            )
+            logger.info("Sample inventory data inserted.")
 
         conn.commit()
         logger.info("Database initialization complete (inventory table).")
     except sqlite3.Error as e:
         logger.error(f"Error during database initialization: {e}")
-        # Allow the app to start, but log the error
     except Exception as e:
-         logger.error(f"Unexpected error during database initialization: {e}")
+        logger.error(f"Unexpected error during database initialization: {e}")
     finally:
         if conn:
             conn.close()

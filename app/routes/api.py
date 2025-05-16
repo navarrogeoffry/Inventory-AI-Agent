@@ -1,7 +1,7 @@
 # app/routes/api.py
-
+import pathlib
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
+# from fastapi.responses import StreamingResponse # Not used here
 from pydantic import BaseModel, Field
 import logging
 import os
@@ -9,259 +9,229 @@ import io
 import uuid
 from typing import List, Dict, Any, Tuple
 
+# --- Path Setup for Chart Saving ---
+# Assumes main.py (the script being run) is in the project root.
+# So, at the time this module is imported, cwd() should be the project root.
+PROJECT_ROOT_FOR_API = pathlib.Path(__file__).resolve().parent.parent.parent
+CHART_SAVE_DIRECTORY = PROJECT_ROOT_FOR_API / "static"  
+# Ensure this directory exists when the module is loaded.
+# main.py's lifespan manager also ensures this, but this is good for direct tests/robustness.
+try:
+    CHART_SAVE_DIRECTORY.mkdir(parents=True, exist_ok=True)
+except Exception as e_mkdir_api:
+    # If logger isn't configured yet by main.py, this might not show.
+    # But main.py's early logging setup should catch this if it's an issue for the app overall.
+    print(f"API.PY WARNING: Could not create chart save directory {CHART_SAVE_DIRECTORY}: {e_mkdir_api}")
+
+
 # Import functions from refactored modules
 from app.db import execute_query, execute_modification, check_item_exists, get_item_quantity
 from app.plotting import create_bar_chart, create_pie_chart, create_line_chart, create_scatter_plot
-from app.sql_validator import validate_sql # Import validation function
-from app.ai_processing import get_sql_and_chart_info, get_ai_explanation, get_modification_intent # Import AI functions
 
-logger = logging.getLogger(__name__)
+plot_func_map = {
+    "bar": create_bar_chart,
+    "pie": create_pie_chart,
+    "line": create_line_chart,
+    "scatter": create_scatter_plot,
+}
+from app.sql_validator import validate_sql
+from app.ai_processing import get_sql_and_chart_info, get_ai_explanation, get_modification_intent
+plot_func_map = {
+    "bar": create_bar_chart,
+    "pie": create_pie_chart,
+    "line": create_line_chart,
+    "scatter": create_scatter_plot,
+}
+logger = logging.getLogger(__name__) # Get logger instance
+
+# Add a test log message at module load time for api.py
+logger.critical("API.PY: Module loaded and logger is active. CRITICAL.")
+logger.error("API.PY: Module loaded and logger is active. ERROR.")
+logger.warning("API.PY: Module loaded and logger is active. WARNING.")
+logger.info("API.PY: Module loaded and logger is active. INFO.")
+logger.debug("API.PY: Module loaded and logger is active. DEBUG.")
+
 
 # --- In-Memory Conversation History Store ---
-# WARNING: This is lost on server restart and not suitable for production scaling.
 conversation_histories: Dict[str, List[Dict[str, str]]] = {}
-MAX_HISTORY_TURNS = 5 # Keep last N user/assistant turns
+MAX_HISTORY_TURNS = 5
 
 # --- Pydantic Models ---
 class QueryRequest(BaseModel):
     natural_language_query: str
     user_id: str | None = None
-    session_id: str | None = None # Optional session ID from client
+    session_id: str | None = None
 
 class QueryResponse(BaseModel):
-    status: str # 'success', 'warning', 'error'
+    status: str
     natural_query: str
-    sql_query: str | None = None # The generated SQL (template + params for debugging)
-    results: list | None = None # The data returned from the DB (for data responses)
-    explanation: str | None = None # AI explanation or status message
-    error: str | None = None # Error message if status is 'error' or 'warning'
-    session_id: str # Always return session ID for client to use next time
+    sql_query: str | None = None
+    results: list | None = None
+    explanation: str | None = None
+    error: str | None = None
+    session_id: str
     chart_url: str | None = None
-    modification_type: str | None = None # Type of modification performed (record_sale, add_stock)
-    modification_details: dict | None = None # Details of the modification
+    modification_type: str | None = None
+    modification_details: dict | None = None
 
-# Create the API router instance
 router = APIRouter()
 
 @router.get("/health")
 def health_check():
-    """Basic health check endpoint."""
+    logger.debug("Health check endpoint called.")
     return {"status": "ok"}
 
-# --- Process Query Endpoint (Using Refactored Modules) ---
 @router.post("/process_query")
 async def process_query(request: QueryRequest):
-    """
-    Processes query using refactored components: manages history, calls AI processing,
-    validates SQL, executes query, handles plotting, generates explanation.
-    Returns JSON data or chart image. Includes session_id.
-    """
-    logger.info(f"Received query: '{request.natural_language_query}' from user: {request.user_id}, session: {request.session_id}")
+    logger.info(f"API - process_query called with query: '{request.natural_language_query}', session: {request.session_id}")
+    logger.debug(f"API - Using chart save directory: {CHART_SAVE_DIRECTORY.resolve()}")
 
-# --- Session and History Management ---
     if request.session_id and request.session_id in conversation_histories:
         session_id = request.session_id
         history = conversation_histories[session_id]
-        logger.info(f"Using existing session {session_id} with {len(history)} turns.")
     else:
         session_id = request.session_id or str(uuid.uuid4())
         history = []
         conversation_histories[session_id] = history
-        logger.info(f"Started new session {session_id}.")
+        logger.info(f"API - Started new session {session_id} for query.")
 
     current_user_message = {"role": "user", "content": request.natural_language_query}
     limited_history = history[-(MAX_HISTORY_TURNS * 2):]
 
-
-    # --- Initialize variables ---
-    sql_template: str | None = None; params: list | None = None; response_type: str | None = "data"; chart_type: str | None = None
+    sql_template: str | None = None; params: list | None = None; response_type: str = "data"; chart_type: str | None = None
     x_col_suggestion: str | None = None; y_col_suggestion: str | None = None; db_results: list | None = None
-    status_msg: str | None = None # Initialize status to None
-    error_msg: str | None = None; ai_explanation: str | None = None
-    assistant_response_content: str | None = None # For history
-    modification_type: str | None = None
-    modification_details: dict | None = None
+    status_msg: str = "success"; error_msg: str | None = None; ai_explanation: str | None = None
+    chart_url_for_frontend: str | None = None
 
     try:
-        # 0. Check for data modification intent
         action_type, action_details = await get_modification_intent(
             request.natural_language_query, limited_history
         )
         
-        # If this is a modification request
         if action_type in ["record_sale", "add_stock"] and action_details:
-            logger.info(f"Detected modification intent: {action_type}")
+            logger.info(f"API - Detected modification intent: {action_type}")
             return await process_modification(
                 action_type, action_details, 
                 request.natural_language_query, session_id, 
-                current_user_message, limited_history
+                current_user_message, history # Pass full history to modification
             )
         
-        # 1. Get info from AI (Call refactored function)
         (sql_template, params, response_type, chart_type,
          x_col_suggestion, y_col_suggestion) = await get_sql_and_chart_info(
              request.natural_language_query, limited_history
          )
-        # Handle AI refusal/failure
-        if sql_template is None: raise ValueError("AI failed to generate valid response.")
-        if sql_template in ["QUERY_UNABLE_TO_GENERATE", "QUERY_UNSAFE"]:
-            assistant_response_content = f"AI Response: {sql_template}"; status_msg = "error"
-            error_msg = f"Query cannot be processed: {sql_template}"; response_type = "data"
+        logger.debug(f"API - AI response: sql='{sql_template}', params='{params}', response_type='{response_type}', chart_type='{chart_type}'")
+
+        if sql_template is None:
+            status_msg, error_msg, response_type = "error", "AI failed to generate a valid SQL response.", "data"
+            logger.error(error_msg)
+        elif sql_template in ["QUERY_UNABLE_TO_GENERATE", "QUERY_UNSAFE"]:
+            status_msg, error_msg, response_type = "error", f"Query cannot be processed: AI responded '{sql_template}'.", "data"
+            logger.warning(error_msg)
         else:
-             assistant_response_content = f"SQL: {sql_template}, Params: {params}"
-
-        # 2. Validate SQL Template (Skip if AI refused)
-        if status_msg != "error":
-            # Call refactored validation function
             if not validate_sql(sql_template):
-                assistant_response_content = "SQL validation failed."; raise ValueError("SQL validation failed.")
+                status_msg, error_msg, response_type = "error", "Generated SQL failed validation.", "data"
+                logger.error(error_msg)
+            else:
+                try:
+                    db_results = execute_query(sql_template, tuple(params or []))
+                    logger.info(f"API - DB query successful. Results count: {len(db_results) if db_results is not None else 'None'}")
+                except ValueError as db_ve:
+                    status_msg, error_msg, response_type = "error", f"Database error: {db_ve}", "data"
+                    logger.error(error_msg)
 
-        # 3. Execute Query (Skip if error already occurred)
-        if status_msg != "error":
-            logger.info("Attempting database query execution...")
-            try:
-                db_results = execute_query(sql_template, tuple(params))
-                status_msg = "success" # Set status only on success
-                logger.info(f"Database query successful. Status set to: {status_msg}. Results count: {len(db_results) if db_results is not None else 'None'}")
-            except ValueError as db_ve:
-                 logger.error(f"Database execution error caught: {db_ve}")
-                 status_msg = "error"; error_msg = str(db_ve)
-                 assistant_response_content = error_msg; response_type = "data"
-            logger.info(f"After DB execution block: status='{status_msg}', error='{error_msg}'")
-
-        # 4. Decide Response: Chart or Data? (Skip if error occurred)
         if response_type == "chart" and status_msg == "success":
-            if not db_results: # Fallback if no data
-                logger.warning("Chart requested, but query returned no results.")
-                response_type = "data"; status_msg = "warning"; ai_explanation = "No data to plot."
-                assistant_response_content = ai_explanation
-            else: # Attempt chart generation
-                logger.info(f"Attempting chart: '{chart_type}', x_sug='{x_col_suggestion}', y_sug='{y_col_suggestion}'")
-                image_buffer: io.BytesIO | None = None; plot_title = f"Chart: {request.natural_language_query}"
-                x_col, y_col = x_col_suggestion, y_col_suggestion; actual_columns = list(db_results[0].keys())
-                
-                #logging debug delete this
-                logger.info(f"Original AI columns: x='{x_col_suggestion}', y='{y_col_suggestion}'")
-                logger.info(f"Actual fallback columns: x='{x_col}', y='{y_col}'")
-                logger.info(f"Available columns: {actual_columns}")
-                #end debug logging
+            actual_columns = list(db_results[0].keys()) if db_results and db_results[0] else []
+            x_col, y_col = x_col_suggestion, y_col_suggestion
+            if not actual_columns:
+                logger.error("API - No columns in db_results for chart. Fallback to data.")
+                response_type, status_msg, error_msg = "data", "error", "Cannot generate chart, data has no columns."
+            else:
+                if x_col is None or x_col not in actual_columns:
+                    x_col = actual_columns[0]
+                if y_col is None or y_col not in actual_columns or y_col == x_col:
+                    y_col = actual_columns[1] if len(actual_columns) > 1 else actual_columns[0]
+                logger.info(f"API - Using columns for plot: x='{x_col}', y='{y_col}'")
+                plot_func = plot_func_map.get(chart_type)
+                if not plot_func:
+                    logger.warning(f"API - Unknown chart type '{chart_type}'. Fallback to data.")
+                    response_type, status_msg, error_msg = "data", "warning", f"Unsupported chart type: '{chart_type}'."
+                else:
+                    plot_title = f"Chart: {chart_type.title()} of {y_col} vs {x_col}"
+                    logger.info(f"API - Generating chart with title: {plot_title}")
+                    image_buffer = plot_func(db_results, x_col=x_col, y_col=y_col, title=plot_title)
+                    if image_buffer:
+                        filename = f"chart_{session_id[:8]}_{uuid.uuid4().hex[:8]}.png"
+                        file_path_to_save = CHART_SAVE_DIRECTORY / filename
+                        try:
+                            with open(file_path_to_save, "wb") as f:
+                                f.write(image_buffer.getvalue())
+                            logger.info(f"API - SUCCESS: Chart saved to: {file_path_to_save.resolve()}")
+                            chart_url_for_frontend = f"/generated_charts/{filename}"
+                            logger.info(f"API - Generated chart URL for frontend: {chart_url_for_frontend}")
+                            ai_explanation = f"Generated a {chart_type} chart."
+                            history.append(current_user_message)
+                            history.append({"role": "assistant", "content": ai_explanation, "chart_url": chart_url_for_frontend})
+                            conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
+                            response_obj = QueryResponse(
+                                status="success", natural_query=request.natural_language_query,
+                                explanation=ai_explanation, session_id=session_id, chart_url=chart_url_for_frontend
+                            )
+                            logger.debug(f"API - Returning chart response: {response_obj.model_dump_json(indent=2)}")
+                            return response_obj
+                        except IOError as e:
+                            logger.error(f"API - ERROR: Failed to save chart image to {file_path_to_save}: {e}")
+                            status_msg, error_msg, response_type = "error", "Failed to save chart image.", "data"
+                            ai_explanation = error_msg
+                    else:
+                        logger.warning("API - Plotting function returned no image buffer. Fallback to data.")
+                        status_msg = status_msg if status_msg == "error" else "warning"
+                        error_msg = error_msg or "Failed to generate chart image data."
+                        ai_explanation = error_msg
+                        response_type = "data"
 
-
-
-                # Column fallback logic...
-                if x_col is None or x_col not in actual_columns: x_col = next((k for k in actual_columns if isinstance(db_results[0][k], str)), actual_columns[0])
-                if y_col is None or y_col not in actual_columns:
-                     y_col_fallback = next((k for k in actual_columns if isinstance(db_results[0][k], (int, float))), None)
-                     if y_col_fallback is None: y_col_fallback = actual_columns[1] if len(actual_columns) > 1 else actual_columns[0]
-                     y_col = y_col_fallback if y_col_fallback != x_col else actual_columns[0]
-                logger.info(f"Using columns for plot: x='{x_col}', y='{y_col}'")
-                # Call plotting function...
-                plot_func = None
-                if chart_type == "bar": plot_func = create_bar_chart
-                elif chart_type == "pie": 
-                    def pie_chart_adapter(data, x_col, y_col, title):
-                        return create_pie_chart(data, label_col=x_col, value_col=y_col, title=title)
-                    plot_func = pie_chart_adapter
-                elif chart_type == "line": plot_func = create_line_chart
-                elif chart_type == "scatter": plot_func = create_scatter_plot
-                if plot_func: image_buffer = plot_func(db_results, x_col=x_col, y_col=y_col, title=plot_title)
-                else: error_msg = f"Unknown chart type '{chart_type}'."; response_type = "data"
-                # Return image if successful
-                
-                if image_buffer:
-                    logger.info("Saving chart image and returning URL.")
-
-                    # Create a filename using session ID and timestamp
-                filename = f"chart_{session_id[:8]}_{uuid.uuid4().hex[:8]}.png"
-                file_path = f"static/{filename}"
-
-                # Save image to static directory
-                with open(file_path, "wb") as f:
-                    f.write(image_buffer.read())
-                    logger.info(f"Saved chart to: {file_path}")
-
-
-                # Append chart message to history
-                chart_url = f"/static/{filename}"
-                history.append(current_user_message)
-                history.append({"role": "assistant", "content": f"Generated a {chart_type} chart.", "chart_url": chart_url})
-                conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
-
-                 # Return chart URL in JSON
-                return QueryResponse(
-                    status="success",
-                    natural_query=request.natural_language_query,
-                    sql_query=None,
-                    results=None,
-                    explanation=None,
-                    error=None,
-                    session_id=session_id,
-                    chart_url=chart_url  #  Add this to QueryResponse model
-                )
-
-            # fallback if image_buffer was None
-            logger.warning("Plotting function failed.")
-            response_type = "data"
-            status_msg = "warning"
-            error_msg = error_msg or "Failed to generate requested chart."
-            ai_explanation = error_msg
-            assistant_response_content = ai_explanation
-
-        # 5. If response_type is "data", generate explanation and return JSON
+        # Data response or fallback
         if response_type == "data":
-            # Set status to success if no error/warning occurred
-            if status_msg is None: status_msg = "success"
-
-            logger.info(f"Preparing JSON response. Current status='{status_msg}', error='{error_msg}'")
-            if status_msg in ["success", "warning"]:
-                 # Call refactored explanation function
-                 ai_explanation = ai_explanation or await get_ai_explanation(
-                     request.natural_language_query, sql_template, db_results, limited_history
-                 )
-                 assistant_response_content = ai_explanation if ai_explanation else "Processed the request."
-            else: # status == "error"
-                 error_msg = error_msg or "An unknown error occurred during processing."
-                 ai_explanation = error_msg
-                 assistant_response_content = ai_explanation
-
-            logger.info("Returning data as JSON response with explanation.")
-            history.append(current_user_message); history.append({"role": "assistant", "content": assistant_response_content})
+            if status_msg == "success" and not error_msg:
+                ai_explanation = await get_ai_explanation(request.natural_language_query, sql_template, db_results, limited_history)
+            else: # status_msg is "warning" or "error"
+                ai_explanation = ai_explanation or error_msg or "Could not process the request as expected."
+            
+            assistant_response_content = ai_explanation
+            history.append(current_user_message)
+            history.append({"role": "assistant", "content": assistant_response_content})
             conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
-            response = QueryResponse(
+
+            response_obj = QueryResponse(
                 status=status_msg, natural_query=request.natural_language_query,
                 sql_query=f"Template: {sql_template} | Params: {params}" if sql_template else None,
-                results=db_results, explanation=ai_explanation, error=error_msg,
-                session_id=session_id
+                results=db_results, explanation=ai_explanation,
+                error=error_msg if status_msg == "error" else None,
+                session_id=session_id, chart_url=None
             )
-            return response
+            logger.debug(f"API - Returning data response: {response_obj.model_dump_json(indent=2)}")
+            return response_obj
 
-        # Fallback safeguard
-        logger.error("Reached unexpected end of endpoint logic.")
-        raise HTTPException(status_code=500, detail="Server error: Invalid response state.")
-
-    # --- Exception Handling ---
     except ValueError as ve:
-        logger.error(f"Caught ValueError in main try block: {ve}")
-        status_msg = "error"; error_msg = str(ve) if str(ve) else "Processing error occurred."
-        if "validation failed" in error_msg.lower(): sql_template = None; params = None
+        logger.error(f"API - ValueError in process_query: {ve}")
+        status_msg, error_msg = "error", str(ve)
     except Exception as e:
-        logger.exception("[Exception Block] Caught unexpected exception:")
-        status_msg = "error"; error_msg = repr(e) if repr(e) else "An unexpected server error occurred."
-        sql_template = None; db_results = None
-
-    # --- Return Error Response ---
-    final_error_msg = error_msg or "An unspecified error occurred."
-    logger.info(f"FINAL: Returning error as JSON response due to exception: {final_error_msg}")
+        logger.exception("API - Unexpected exception in process_query:")
+        status_msg, error_msg = "error", "An unexpected server error occurred."
+    
+    # Fallback error response
+    assistant_response_content = error_msg or "Failed to process the request."
     history.append(current_user_message)
-    history.append({"role": "assistant", "content": final_error_msg})
+    history.append({"role": "assistant", "content": assistant_response_content})
     conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
 
-    error_response = QueryResponse(
-        status=status_msg or "error", natural_query=request.natural_language_query,
-        sql_query=f"Template: {sql_template} | Params: {params}" if sql_template else None,
-        results=None, explanation=None, error=final_error_msg, session_id=session_id
+    response_obj = QueryResponse(
+        status=status_msg, natural_query=request.natural_language_query,
+        sql_query=f"Template: {sql_template} | Params: {params}" if sql_template and status_msg != "error" else None,
+        results=None, explanation=None, error=error_msg, session_id=session_id, chart_url=None
     )
-    return error_response
+    logger.debug(f"API - Returning fallback error response: {response_obj.model_dump_json(indent=2)}")
+    return response_obj
 
 async def process_modification(
     action_type: str, 
@@ -269,126 +239,72 @@ async def process_modification(
     natural_query: str, 
     session_id: str, 
     current_user_message: dict, 
-    history: list
+    history: list # Full history for saving
 ) -> QueryResponse:
-    """
-    Processes data modification requests (record_sale, add_stock).
-    Performs pre-execution checks, validates and executes SQL update statements,
-    and returns appropriate response.
-    """
-    logger.info(f"Processing modification: {action_type} with details: {action_details}")
+    logger.info(f"API - Processing modification: {action_type} with details: {action_details}")
     
-    # Convert item name to uppercase for consistent database operations
     item_name = action_details.get("item_name", "").upper()
     quantity = action_details.get("quantity", 0)
-    
-    # Update the action_details with uppercase item name for response
-    action_details["item_name"] = item_name
-    
-    sql_template = None
-    params = []
-    status = "success"
-    error_msg = None
-    ai_explanation = None
-    db_results = None
+    action_details["item_name"] = item_name 
+
+    sql_template: str | None = None; params: list = []; db_results_after_mod: list | None = None
+    status: str = "success"; error_msg: str | None = None; ai_explanation: str | None = None
     
     try:
-        # 1. Check if item exists
         if not check_item_exists(item_name):
-            logger.warning(f"Item '{item_name}' does not exist in inventory.")
-            status = "error"
-            error_msg = f"Item '{item_name}' not found in inventory. Please add this item first."
-            raise ValueError(error_msg)
+            raise ValueError(f"Item '{item_name}' not found in inventory.")
         
-        # 2. For record_sale, ensure sufficient stock is available
         if action_type == "record_sale":
             available_quantity = get_item_quantity(item_name)
             if available_quantity < quantity:
-                logger.warning(f"Insufficient stock for sale: requested {quantity}, available {available_quantity}.")
-                status = "error"
-                error_msg = f"Cannot record sale: only {available_quantity} units of '{item_name}' available, but tried to sell {quantity}."
-                raise ValueError(error_msg)
-            
-            # Generate UPDATE statement for recording a sale
-            sql_template = """
-            UPDATE inventory 
-            SET quantity_sold = quantity_sold + ?, 
-                quantity_available = quantity_available - ? 
-            WHERE item = ?
-            """
+                raise ValueError(f"Insufficient stock for sale: requested {quantity} of '{item_name}', available {available_quantity}.")
+            sql_template = "UPDATE inventory SET quantity_sold = quantity_sold + ?, quantity_available = quantity_available - ? WHERE item = ?"
             params = [quantity, quantity, item_name]
-            
         elif action_type == "add_stock":
-            # Generate UPDATE statement for adding stock
-            sql_template = """
-            UPDATE inventory 
-            SET quantity_available = quantity_available + ? 
-            WHERE item = ?
-            """
+            sql_template = "UPDATE inventory SET quantity_available = quantity_available + ? WHERE item = ?"
             params = [quantity, item_name]
-        
-        # 3. Validate the SQL statement
+        else:
+            raise ValueError(f"Unknown modification action_type: {action_type}")
+
         if not validate_sql(sql_template):
-            logger.warning("SQL validation failed for modification.")
-            status = "error"
-            error_msg = "SQL validation failed for the modification operation."
-            raise ValueError(error_msg)
+            raise ValueError("SQL validation failed for the modification.")
         
-        # 4. Execute the modification
         rows_affected, db_error = execute_modification(sql_template, tuple(params))
         
-        if db_error:
-            status = "error"
-            error_msg = db_error
-            raise ValueError(db_error)
-        
+        if db_error: raise ValueError(f"DB error during modification: {db_error}")
         if rows_affected == 0:
             status = "warning"
-            error_msg = f"No rows were affected. The item '{item_name}' may not exist."
-            ai_explanation = error_msg
+            ai_explanation = error_msg = f"No rows affected for item '{item_name}'. Check if item exists with exact name."
         else:
-            # 5. Check the new state and generate explanation
-            if action_type == "record_sale":
-                # Query the updated state
-                query = "SELECT * FROM inventory WHERE item = ?"
-                db_results = execute_query(query, (item_name,))
-                remaining = db_results[0].get('quantity_available', 0) if db_results else 0
-                
-                ai_explanation = f"Recorded sale of {quantity} units of '{item_name}'. Remaining stock: {remaining} units."
-            else:  # add_stock
-                # Query the updated state
-                query = "SELECT * FROM inventory WHERE item = ?"
-                db_results = execute_query(query, (item_name,))
-                new_quantity = db_results[0].get('quantity_available', 0) if db_results else 0
-                
-                ai_explanation = f"Added {quantity} units of '{item_name}' to inventory. New stock level: {new_quantity} units."
-    
+            query_after_mod = "SELECT item, quantity_available, quantity_sold FROM inventory WHERE item = ?"
+            db_results_after_mod = execute_query(query_after_mod, (item_name,))
+            if db_results_after_mod and db_results_after_mod[0]:
+                current_stock = db_results_after_mod[0].get('quantity_available', 'N/A')
+                total_sold = db_results_after_mod[0].get('quantity_sold', 'N/A')
+                ai_explanation = f"Successfully {action_type.replace('_', ' ')} for {quantity} unit(s) of '{item_name}'. Current stock: {current_stock}. Total sold: {total_sold}."
+            else:
+                status = "warning"
+                ai_explanation = error_msg = f"Modification for '{item_name}' successful ({rows_affected} row(s) affected), but failed to retrieve updated stock details."
+
     except ValueError as ve:
-        logger.error(f"Error during modification: {ve}")
-        status = "error"
-        error_msg = str(ve)
-        ai_explanation = error_msg
+        logger.error(f"API - ValueError in process_modification: {ve}")
+        status, error_msg, ai_explanation = "error", str(ve), str(ve)
     except Exception as e:
-        logger.exception(f"Unexpected error during modification: {e}")
-        status = "error"
-        error_msg = f"Unexpected error during modification: {str(e)}"
-        ai_explanation = error_msg
+        logger.exception("API - Unexpected exception in process_modification:")
+        status, error_msg, ai_explanation = "error", "Unexpected server error during modification.", "Unexpected server error."
     
-    # Update conversation history
-    assistant_response = ai_explanation or error_msg or "Modification completed."
+    assistant_response_content = ai_explanation or error_msg or "Modification processed."
     history.append(current_user_message)
-    history.append({"role": "assistant", "content": assistant_response})
+    history.append({"role": "assistant", "content": assistant_response_content})
     conversation_histories[session_id] = history[-(MAX_HISTORY_TURNS * 2):]
     
-    # Return the response
-    return QueryResponse(
-        status=status,
-        natural_query=natural_query,
+    response_obj = QueryResponse(
+        status=status, natural_query=natural_query,
         sql_query=f"Template: {sql_template} | Params: {params}" if sql_template else None,
-        results=db_results,
-        explanation=ai_explanation,
-        error=error_msg,
-        session_id=session_id,
-        modification_type=action_type,
-        modification_details=action_details
+        results=db_results_after_mod, explanation=ai_explanation,
+        error=error_msg if status == "error" else None, session_id=session_id,
+        modification_type=action_type if status == "success" else None,
+        modification_details=action_details if status == "success" else None
     )
+    logger.debug(f"API - Returning modification response: {response_obj.model_dump_json(indent=2)}")
+    return response_obj
