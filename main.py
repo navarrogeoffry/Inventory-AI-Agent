@@ -21,8 +21,6 @@ except Exception as e:
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.warning(f"Could not reliably determine script path, using CWD as BASE_DIR: {BASE_DIR}. Error: {e}")
 
-
-SETUP_SCRIPT_NAME = "setup.py"
 VENV_DIR_NAME = ".venv"  # Name of the venv directory, matches setup.py
 VENV_PATH = BASE_DIR / VENV_DIR_NAME
 
@@ -59,41 +57,6 @@ def is_running_in_venv():
         
     return False
 
-
-def trigger_setup_script(base_dir_path: pathlib.Path):
-    """
-    Runs the setup.py script to ensure the environment is configured.
-    Returns True if setup script ran (or was checked) successfully, False otherwise.
-    """
-    setup_script_full_path = base_dir_path / SETUP_SCRIPT_NAME
-    print(f"--- main.py: Ensuring development environment via '{setup_script_full_path.resolve()}' ---")
-    
-    if not setup_script_full_path.exists():
-        print(f"CRITICAL ERROR: '{SETUP_SCRIPT_NAME}' not found at '{setup_script_full_path.resolve()}'.")
-        print(f"BASE_DIR is currently: {base_dir_path.resolve()}")
-        print(f"Current working directory is: {os.getcwd()}")
-        print("Please ensure 'setup.py' is in the same directory as 'main.py'.")
-        return False
-    
-    try:
-        # Run setup.py using the current Python interpreter (sys.executable).
-        # setup.py itself handles using system Python for initial venv creation if needed.
-        command = [sys.executable, str(setup_script_full_path)] + sys.argv[1:]
-        print(f"main.py: Executing command: {' '.join(command)}")
-        process = subprocess.run(command, check=True, cwd=base_dir_path) # Run with cwd as BASE_DIR
-        print(f"--- main.py: '{SETUP_SCRIPT_NAME}' execution finished successfully. ---")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"ERROR in main.py: '{SETUP_SCRIPT_NAME}' failed with exit code {e.returncode}.")
-        if e.stdout: print(f"Stdout:\n{e.stdout}")
-        if e.stderr: print(f"Stderr:\n{e.stderr}")
-        return False
-    except FileNotFoundError: # Should be caught by the exists() check, but as a safeguard
-        print(f"ERROR in main.py: Could not execute '{SETUP_SCRIPT_NAME}'. File not found during subprocess call.")
-        return False
-    except Exception as e:
-        print(f"ERROR in main.py: An unexpected error occurred while trying to run '{SETUP_SCRIPT_NAME}': {e}")
-        return False
 
 
 def application_startup_and_logic():
@@ -358,10 +321,7 @@ if __name__ == "__main__":
 
     if not is_running_in_venv():
         logging.warning("main.py: Not currently running in the project's virtual environment.")
-        
-        if not trigger_setup_script(BASE_DIR): # Pass BASE_DIR to the function
-            logging.error("main.py: Setup script failed. Please check errors. Exiting main.py.")
-            sys.exit(1)
+    
 
         if VENV_PYTHON_EXEC.exists():
             logging.info(f"main.py: Virtual environment Python found at: {VENV_PYTHON_EXEC.resolve()}")
@@ -379,15 +339,12 @@ if __name__ == "__main__":
                 sys.exit(1)
         else:
             logging.error(f"main.py: Error: Virtual environment Python executable not found at '{VENV_PYTHON_EXEC.resolve()}' even after running setup.")
-            logging.error("main.py: Please check 'setup.py' for errors. Cannot re-launch.")
             sys.exit(1)
     else:
         logging.info("main.py: Already running in the project's virtual environment.")
         # Even if in venv, run setup.py to catch any updates to requirements.
         # setup.py is idempotent, so it will be quick if no changes are needed.
-        if not trigger_setup_script(BASE_DIR): # Pass BASE_DIR
-            logging.error("main.py: Setup script check/update failed. Please review errors. Exiting main.py.")
-            sys.exit(1)
+
         
         application_startup_and_logic() # Proceed to application
 
