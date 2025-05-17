@@ -1,0 +1,127 @@
+2025-05-16 19:14:49,243 - __main__ - INFO - [main.py:165] - MAIN.PY: Logging configured. Running with Python: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\.venv\Scripts\python.exe
+2025-05-16 19:14:49,244 - __main__ - INFO - [main.py:166] - MAIN.PY: BASE_DIR determined as: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent
+2025-05-16 19:14:49,244 - __main__ - INFO - [main.py:167] - MAIN.PY: Current working directory: C:\Users\rtdau\OneDrive\Desktop\Release
+2025-05-16 19:14:49,244 - __main__ - INFO - [main.py:171] - MAIN.PY: .env file was not found at 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\.env' or not loaded initially by python-dotenv.
+2025-05-16 19:14:51,158 - app.db - INFO - [db.py:17] - Database path configured to: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:14:51,159 - app.db - INFO - [db.py:18] - Database absolute path: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:14:58,777 - app.ai_processing - INFO - [ai_processing.py:14] - OpenAI client initialized successfully in ai_processing module.
+2025-05-16 19:14:58,777 - app.routes.api - CRITICAL - [api.py:48] - API.PY: Module loaded and logger is active. CRITICAL.
+2025-05-16 19:14:58,777 - app.routes.api - ERROR - [api.py:49] - API.PY: Module loaded and logger is active. ERROR.
+2025-05-16 19:14:58,778 - app.routes.api - WARNING - [api.py:50] - API.PY: Module loaded and logger is active. WARNING.
+2025-05-16 19:14:58,778 - app.routes.api - INFO - [api.py:51] - API.PY: Module loaded and logger is active. INFO.
+2025-05-16 19:14:58,780 - __main__ - INFO - [main.py:189] - MAIN.PY: Successfully imported application modules (app.routes.api, app.db).
+2025-05-16 19:14:58,781 - __main__ - INFO - [main.py:211] - MAIN.PY: OpenAI API Key confirmed to be loaded for the application.
+2025-05-16 19:14:58,781 - __main__ - INFO - [main.py:253] - MAIN.PY: CORS allowed origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:8000', 'http://127.0.0.1:8000']
+2025-05-16 19:14:58,782 - __main__ - ERROR - [main.py:268] - MAIN.PY: CRITICAL: React app's static assets directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' NOT FOUND. UI will be broken. Ensure 'npm run build' was run in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:14:58,782 - __main__ - INFO - [main.py:272] - MAIN.PY: Serving generated charts from 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static' under URL 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static'
+2025-05-16 19:14:58,784 - __main__ - INFO - [main.py:291] - MAIN.PY: Attempting to start Inventory AI Agent FastAPI server...
+2025-05-16 19:14:59,295 - __main__ - INFO - [main.py:302] - MAIN.PY: Port 8000 is available.
+2025-05-16 19:14:59,295 - __main__ - INFO - [main.py:317] - MAIN.PY: FastAPI server will run on http://localhost:8000
+2025-05-16 19:14:59,384 - __main__ - INFO - [main.py:216] - MAIN.PY: FastAPI application starting up...
+2025-05-16 19:14:59,385 - __main__ - INFO - [main.py:217] - MAIN.PY: Ensured directory for generated charts exists: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static
+2025-05-16 19:14:59,386 - __main__ - WARNING - [main.py:220] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' not found. Frontend may not load. Run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:14:59,386 - __main__ - WARNING - [main.py:224] - MAIN.PY: React app's internal static assets folder 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' not found. Frontend styles/scripts might be missing.
+2025-05-16 19:14:59,387 - app.db - INFO - [db.py:38] - Attempting to initialize database tables (inventory table)...
+2025-05-16 19:14:59,387 - app.db - INFO - [db.py:25] - Successfully connected to database: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:14:59,388 - app.db - INFO - [db.py:54] - Table 'inventory' checked/created.
+2025-05-16 19:14:59,388 - app.db - INFO - [db.py:75] - Database initialization complete (inventory table).
+2025-05-16 19:14:59,388 - __main__ - INFO - [main.py:228] - MAIN.PY: Database initialized successfully.
+2025-05-16 19:15:01,478 - __main__ - INFO - [main.py:324] - MAIN.PY: Attempted to open web browser to http://localhost:8000
+2025-05-16 19:15:01,868 - __main__ - ERROR - [main.py:283] - MAIN.PY: React index.html not found at: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\index.html. Did you run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'?
+2025-05-16 19:15:01,869 - __main__ - ERROR - [main.py:285] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' does not exist.
+2025-05-16 19:20:01,164 - __main__ - INFO - [main.py:165] - MAIN.PY: Logging configured. Running with Python: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\.venv\Scripts\python.exe
+2025-05-16 19:20:01,165 - __main__ - INFO - [main.py:166] - MAIN.PY: BASE_DIR determined as: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent
+2025-05-16 19:20:01,165 - __main__ - INFO - [main.py:167] - MAIN.PY: Current working directory: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent
+2025-05-16 19:20:01,165 - __main__ - INFO - [main.py:169] - MAIN.PY: Successfully loaded .env file from: True
+2025-05-16 19:20:01,753 - app.db - INFO - [db.py:17] - Database path configured to: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:20:01,753 - app.db - INFO - [db.py:18] - Database absolute path: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:20:03,764 - app.ai_processing - INFO - [ai_processing.py:14] - OpenAI client initialized successfully in ai_processing module.
+2025-05-16 19:20:03,764 - app.routes.api - CRITICAL - [api.py:48] - API.PY: Module loaded and logger is active. CRITICAL.
+2025-05-16 19:20:03,764 - app.routes.api - ERROR - [api.py:49] - API.PY: Module loaded and logger is active. ERROR.
+2025-05-16 19:20:03,764 - app.routes.api - WARNING - [api.py:50] - API.PY: Module loaded and logger is active. WARNING.
+2025-05-16 19:20:03,765 - app.routes.api - INFO - [api.py:51] - API.PY: Module loaded and logger is active. INFO.
+2025-05-16 19:20:03,768 - __main__ - INFO - [main.py:189] - MAIN.PY: Successfully imported application modules (app.routes.api, app.db).
+2025-05-16 19:20:03,768 - __main__ - INFO - [main.py:211] - MAIN.PY: OpenAI API Key confirmed to be loaded for the application.
+2025-05-16 19:20:03,768 - __main__ - INFO - [main.py:253] - MAIN.PY: CORS allowed origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:8000', 'http://127.0.0.1:8000']
+2025-05-16 19:20:03,769 - __main__ - ERROR - [main.py:268] - MAIN.PY: CRITICAL: React app's static assets directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' NOT FOUND. UI will be broken. Ensure 'npm run build' was run in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:20:03,770 - __main__ - INFO - [main.py:272] - MAIN.PY: Serving generated charts from 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static' under URL 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static'
+2025-05-16 19:20:03,772 - __main__ - INFO - [main.py:291] - MAIN.PY: Attempting to start Inventory AI Agent FastAPI server...
+2025-05-16 19:20:04,287 - __main__ - INFO - [main.py:302] - MAIN.PY: Port 8000 is available.
+2025-05-16 19:20:04,287 - __main__ - INFO - [main.py:317] - MAIN.PY: FastAPI server will run on http://localhost:8000
+2025-05-16 19:20:04,304 - __main__ - INFO - [main.py:216] - MAIN.PY: FastAPI application starting up...
+2025-05-16 19:20:04,305 - __main__ - INFO - [main.py:217] - MAIN.PY: Ensured directory for generated charts exists: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static
+2025-05-16 19:20:04,306 - __main__ - WARNING - [main.py:220] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' not found. Frontend may not load. Run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:20:04,306 - __main__ - WARNING - [main.py:224] - MAIN.PY: React app's internal static assets folder 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' not found. Frontend styles/scripts might be missing.
+2025-05-16 19:20:04,307 - app.db - INFO - [db.py:38] - Attempting to initialize database tables (inventory table)...
+2025-05-16 19:20:04,307 - app.db - INFO - [db.py:25] - Successfully connected to database: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:20:04,308 - app.db - INFO - [db.py:54] - Table 'inventory' checked/created.
+2025-05-16 19:20:04,308 - app.db - INFO - [db.py:75] - Database initialization complete (inventory table).
+2025-05-16 19:20:04,309 - __main__ - INFO - [main.py:228] - MAIN.PY: Database initialized successfully.
+2025-05-16 19:20:06,548 - __main__ - INFO - [main.py:324] - MAIN.PY: Attempted to open web browser to http://localhost:8000
+2025-05-16 19:20:06,951 - __main__ - ERROR - [main.py:283] - MAIN.PY: React index.html not found at: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\index.html. Did you run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'?
+2025-05-16 19:20:06,952 - __main__ - ERROR - [main.py:285] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' does not exist.
+2025-05-16 19:20:15,252 - __main__ - INFO - [main.py:234] - MAIN.PY: FastAPI application shutting down...
+2025-05-16 19:38:43,670 - __main__ - INFO - [main.py:165] - MAIN.PY: Logging configured. Running with Python: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\.venv\Scripts\python.exe
+2025-05-16 19:38:43,670 - __main__ - INFO - [main.py:166] - MAIN.PY: BASE_DIR determined as: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent
+2025-05-16 19:38:43,671 - __main__ - INFO - [main.py:167] - MAIN.PY: Current working directory: C:\Users\rtdau\OneDrive\Desktop\Release
+2025-05-16 19:38:43,671 - __main__ - INFO - [main.py:169] - MAIN.PY: Successfully loaded .env file from: True
+2025-05-16 19:38:45,473 - app.db - INFO - [db.py:17] - Database path configured to: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:38:45,473 - app.db - INFO - [db.py:18] - Database absolute path: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:38:52,201 - app.ai_processing - INFO - [ai_processing.py:14] - OpenAI client initialized successfully in ai_processing module.
+2025-05-16 19:38:52,201 - app.routes.api - CRITICAL - [api.py:48] - API.PY: Module loaded and logger is active. CRITICAL.
+2025-05-16 19:38:52,201 - app.routes.api - ERROR - [api.py:49] - API.PY: Module loaded and logger is active. ERROR.
+2025-05-16 19:38:52,201 - app.routes.api - WARNING - [api.py:50] - API.PY: Module loaded and logger is active. WARNING.
+2025-05-16 19:38:52,202 - app.routes.api - INFO - [api.py:51] - API.PY: Module loaded and logger is active. INFO.
+2025-05-16 19:38:52,204 - __main__ - INFO - [main.py:189] - MAIN.PY: Successfully imported application modules (app.routes.api, app.db).
+2025-05-16 19:38:52,204 - __main__ - INFO - [main.py:211] - MAIN.PY: OpenAI API Key confirmed to be loaded for the application.
+2025-05-16 19:38:52,205 - __main__ - INFO - [main.py:253] - MAIN.PY: CORS allowed origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:8000', 'http://127.0.0.1:8000']
+2025-05-16 19:38:52,206 - __main__ - ERROR - [main.py:268] - MAIN.PY: CRITICAL: React app's static assets directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' NOT FOUND. UI will be broken. Ensure 'npm run build' was run in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:38:52,206 - __main__ - INFO - [main.py:272] - MAIN.PY: Serving generated charts from 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static' under URL 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static'
+2025-05-16 19:38:52,208 - __main__ - INFO - [main.py:291] - MAIN.PY: Attempting to start Inventory AI Agent FastAPI server...
+2025-05-16 19:38:52,721 - __main__ - INFO - [main.py:302] - MAIN.PY: Port 8000 is available.
+2025-05-16 19:38:52,722 - __main__ - INFO - [main.py:317] - MAIN.PY: FastAPI server will run on http://localhost:8000
+2025-05-16 19:38:52,819 - __main__ - INFO - [main.py:216] - MAIN.PY: FastAPI application starting up...
+2025-05-16 19:38:52,820 - __main__ - INFO - [main.py:217] - MAIN.PY: Ensured directory for generated charts exists: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static
+2025-05-16 19:38:52,821 - __main__ - WARNING - [main.py:220] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' not found. Frontend may not load. Run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:38:52,821 - __main__ - WARNING - [main.py:224] - MAIN.PY: React app's internal static assets folder 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' not found. Frontend styles/scripts might be missing.
+2025-05-16 19:38:52,821 - app.db - INFO - [db.py:38] - Attempting to initialize database tables (inventory table)...
+2025-05-16 19:38:52,822 - app.db - INFO - [db.py:25] - Successfully connected to database: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:38:52,822 - app.db - INFO - [db.py:54] - Table 'inventory' checked/created.
+2025-05-16 19:38:52,823 - app.db - INFO - [db.py:75] - Database initialization complete (inventory table).
+2025-05-16 19:38:52,823 - __main__ - INFO - [main.py:228] - MAIN.PY: Database initialized successfully.
+2025-05-16 19:38:54,932 - __main__ - INFO - [main.py:324] - MAIN.PY: Attempted to open web browser to http://localhost:8000
+2025-05-16 19:38:55,312 - __main__ - ERROR - [main.py:283] - MAIN.PY: React index.html not found at: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\index.html. Did you run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'?
+2025-05-16 19:38:55,313 - __main__ - ERROR - [main.py:285] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' does not exist.
+2025-05-16 19:39:00,414 - __main__ - INFO - [main.py:234] - MAIN.PY: FastAPI application shutting down...
+2025-05-16 19:43:48,318 - __main__ - INFO - [main.py:165] - MAIN.PY: Logging configured. Running with Python: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\.venv\Scripts\python.exe
+2025-05-16 19:43:48,319 - __main__ - INFO - [main.py:166] - MAIN.PY: BASE_DIR determined as: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent
+2025-05-16 19:43:48,319 - __main__ - INFO - [main.py:167] - MAIN.PY: Current working directory: C:\Users\rtdau\OneDrive\Desktop\Release
+2025-05-16 19:43:48,319 - __main__ - INFO - [main.py:169] - MAIN.PY: Successfully loaded .env file from: True
+2025-05-16 19:43:50,512 - app.db - INFO - [db.py:17] - Database path configured to: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:43:50,512 - app.db - INFO - [db.py:18] - Database absolute path: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:43:58,196 - app.ai_processing - INFO - [ai_processing.py:14] - OpenAI client initialized successfully in ai_processing module.
+2025-05-16 19:43:58,197 - app.routes.api - CRITICAL - [api.py:48] - API.PY: Module loaded and logger is active. CRITICAL.
+2025-05-16 19:43:58,197 - app.routes.api - ERROR - [api.py:49] - API.PY: Module loaded and logger is active. ERROR.
+2025-05-16 19:43:58,197 - app.routes.api - WARNING - [api.py:50] - API.PY: Module loaded and logger is active. WARNING.
+2025-05-16 19:43:58,197 - app.routes.api - INFO - [api.py:51] - API.PY: Module loaded and logger is active. INFO.
+2025-05-16 19:43:58,200 - __main__ - INFO - [main.py:189] - MAIN.PY: Successfully imported application modules (app.routes.api, app.db).
+2025-05-16 19:43:58,200 - __main__ - INFO - [main.py:211] - MAIN.PY: OpenAI API Key confirmed to be loaded for the application.
+2025-05-16 19:43:58,200 - __main__ - INFO - [main.py:253] - MAIN.PY: CORS allowed origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:8000', 'http://127.0.0.1:8000']
+2025-05-16 19:43:58,201 - __main__ - ERROR - [main.py:268] - MAIN.PY: CRITICAL: React app's static assets directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' NOT FOUND. UI will be broken. Ensure 'npm run build' was run in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:43:58,202 - __main__ - INFO - [main.py:272] - MAIN.PY: Serving generated charts from 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static' under URL 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static'
+2025-05-16 19:43:58,204 - __main__ - INFO - [main.py:291] - MAIN.PY: Attempting to start Inventory AI Agent FastAPI server...
+2025-05-16 19:43:58,705 - __main__ - INFO - [main.py:302] - MAIN.PY: Port 8000 is available.
+2025-05-16 19:43:58,706 - __main__ - INFO - [main.py:317] - MAIN.PY: FastAPI server will run on http://localhost:8000
+2025-05-16 19:43:58,789 - __main__ - INFO - [main.py:216] - MAIN.PY: FastAPI application starting up...
+2025-05-16 19:43:58,790 - __main__ - INFO - [main.py:217] - MAIN.PY: Ensured directory for generated charts exists: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\static
+2025-05-16 19:43:58,790 - __main__ - WARNING - [main.py:220] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' not found. Frontend may not load. Run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'.
+2025-05-16 19:43:58,791 - __main__ - WARNING - [main.py:224] - MAIN.PY: React app's internal static assets folder 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\static' not found. Frontend styles/scripts might be missing.
+2025-05-16 19:43:58,791 - app.db - INFO - [db.py:38] - Attempting to initialize database tables (inventory table)...
+2025-05-16 19:43:58,792 - app.db - INFO - [db.py:25] - Successfully connected to database: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\inventory.db
+2025-05-16 19:43:58,792 - app.db - INFO - [db.py:54] - Table 'inventory' checked/created.
+2025-05-16 19:43:58,793 - app.db - INFO - [db.py:75] - Database initialization complete (inventory table).
+2025-05-16 19:43:58,793 - __main__ - INFO - [main.py:228] - MAIN.PY: Database initialized successfully.
+2025-05-16 19:44:00,877 - __main__ - INFO - [main.py:324] - MAIN.PY: Attempted to open web browser to http://localhost:8000
+2025-05-16 19:44:01,258 - __main__ - ERROR - [main.py:283] - MAIN.PY: React index.html not found at: C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build\index.html. Did you run 'npm run build' in 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui'?
+2025-05-16 19:44:01,258 - __main__ - ERROR - [main.py:285] - MAIN.PY: React build directory 'C:\Users\rtdau\OneDrive\Desktop\Release\Inventory-AI-Agent\chatbot-ui\build' does not exist.
+2025-05-16 19:45:26,228 - __main__ - INFO - [main.py:234] - MAIN.PY: FastAPI application shutting down...

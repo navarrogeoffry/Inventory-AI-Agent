@@ -1,177 +1,70 @@
-# Inventory AI Agent
+# Getting Started with Create React App
 
-## Project Goal
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-The Inventory AI Agent aims to be an intelligent assistant that empowers non-technical staff to **interact with, analyze, and manage** an inventory database using natural language commands through a simple chat interface. The goal is to bridge the gap between conversational requests and structured database operations, making inventory data more accessible and actionable without requiring knowledge of SQL or complex reporting tools.
+## Available Scripts
 
-## Features
+In the project directory, you can run:
 
-This project provides a backend API and frontend interface with the following capabilities:
+### `npm start`
 
-1.  **Natural Language Interaction:**
-    * Accept user commands and questions about inventory written in plain English (e.g., "How many widgets do we have?", "Show items low on stock", "Record sale of 5 units of X", "Add 20 units of Y").
-    * Leverages OpenAI's GPT models to accurately understand the user's intent, including follow-up questions within a conversation.
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-2.  **AI-Powered Database Operations:**
-    * Translates the user's intent into parameterized SQLite queries (`SELECT`, `UPDATE`).
-    * Focuses operations on the inventory database with validation to ensure safe queries.
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
-3.  **Data Querying & Analysis:**
-    * Retrieves specific data points or lists based on user criteria.
-    * Provides AI-generated natural language explanations summarizing query results.
+### `npm test`
 
-4.  **Inventory Management:**
-    * Allows users to update inventory levels through commands like recording sales or adding stock.
-    * Includes business logic checks (e.g., preventing sales if stock is insufficient, verifying item existence).
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-5.  **Data Visualization:**
-    * Generates relevant charts (bar, pie, line, scatter) based on user requests or query results.
-    * Returns visualizations directly within the chat interface.
+### `npm run build`
 
-6.  **Security & Safety:**
-    * Includes a validation layer using `sqlparse` to ensure generated SQL (`SELECT`, `UPDATE`) only interacts with allowed database structures and follows safe patterns.
-    * Implements transaction management for data modifications.
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-7.  **Conversational Context:**
-    * Maintains session history to understand context and follow-up questions naturally.
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-8.  **User Interface:**
-    * Provides a responsive, web-based chat interface for user interaction.
-    * Supports displaying both text responses and visualizations.
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-9.  **Error Handling:**
-    * Provides informative feedback if a query cannot be understood, fails validation, or encounters a database/logic issue.
+### `npm run eject`
 
-## Technology Stack
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-* **Backend:**
-    * Language: Python 3
-    * Web Framework: FastAPI
-    * Database: SQLite
-    * AI Model: OpenAI API (GPT-4o or compatible)
-    * Charting: Matplotlib
-    * SQL Parsing: sqlparse
-    * Dependencies: See `requirements.txt`
-* **Frontend:**
-    * React
-    * Tailwind CSS
-    * JavaScript/Node.js
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-## Running the Application
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-### Option 1: Using the Launcher Scripts (Recommended)
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-#### For Mac/Linux Users:
-1. Open a terminal in the project root directory
-2. Run the launcher script:
-   ```bash
-   ./start_app.sh
-   ```
-3. Both the backend and frontend will start automatically
-4. The frontend will open in your default browser
-5. Press Ctrl+C in the terminal when you want to stop both servers
+## Learn More
 
-#### For Windows Users:
-1. Open the project in File Explorer
-2. Double-click `start_app.bat`
-3. Two command windows will open (one for backend, one for frontend)
-4. The frontend will open in your default browser
-5. Close both command windows when you're done
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-### Option 2: Manual Startup
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-If you prefer to start the services manually:
+### Code Splitting
 
-#### Backend Server:
-```bash
-# From project root directory
-PYTHONPATH=$(pwd) python app/main.py
-```
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-#### Frontend Server:
-```bash
-# From project root directory
-cd chatbot-ui
-npm start
-```
+### Analyzing the Bundle Size
 
-## Viewing Logs
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
-The application generates detailed logs to help with monitoring and troubleshooting. All logs are stored in the `logs/` directory:
+### Making a Progressive Web App
 
-### Backend/API Logs
-These logs contain detailed information about API requests, database queries, and AI processing:
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-```bash
-# View the entire backend log
-cat logs/backend.log
+### Advanced Configuration
 
-# Watch backend logs in real-time (updates as new logs come in)
-tail -f logs/backend.log
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-# See just the last 50 lines
-tail -n 50 logs/backend.log
+### Deployment
 
-# Filter for errors only
-grep ERROR logs/backend.log
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-# Filter for specific API endpoints
-grep "process_query" logs/backend.log
-```
+### `npm run build` fails to minify
 
-### Frontend Logs
-These logs show React application logs and build information:
-
-```bash
-# View frontend logs
-cat logs/frontend.log
-
-# Watch frontend logs in real-time
-tail -f logs/frontend.log
-```
-
-### Application Logs
-Internal application logs that may contain information not present in other log files:
-
-```bash
-# View application logs
-cat logs/app.log
-```
-
-For real-time monitoring during application use, running `tail -f logs/backend.log` in a separate terminal window is recommended.
-
-## Troubleshooting
-
-- If the backend server closes unexpectedly, check that your OpenAI API key is set correctly
-- Make sure all dependencies are installed: `pip install -r requirements.txt` and `cd chatbot-ui && npm install`
-- If port 8000 or 3000 is already in use, the application will try alternate ports (up to 8003)
-- Check the logs (as described above) for detailed error messages
-- If you see authentication errors in the logs, run `./setup_env.sh` to update your OpenAI API key
-
-### Shell/Terminal Compatibility Issues
-
-If you encounter errors like `python: command not found` when running the scripts in different terminals (e.g., iTerm vs. Terminal.app):
-
-1. Make the scripts executable (you only need to do this once):
-   ```bash
-   chmod +x start_app.sh setup_env.sh
-   ```
-
-2. If you're using a virtual environment, make sure it's activated:
-   ```bash
-   source venv/bin/activate  # or venv311/bin/activate
-   ```
-
-3. Try running the script with explicit bash:
-   ```bash
-   bash start_app.sh
-   ```
-
-4. If issues persist, manually verify your Python installation:
-   ```bash
-   which python
-   which python3
-   ```
-   
-The scripts have been updated to automatically detect Python in common locations, including virtual environments.
-
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
